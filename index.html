@@ -409,215 +409,260 @@
       </div>
     </aside>
   </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
-
-  <script>
-    // -----------------------------
-    // Starter data you control
-    // -----------------------------
-    const huntUnits = [
-      {
-        unitCode: 'UT001',
-        unitName: 'Beaver',
-        species: 'Mule Deer, Elk',
-        region: 'Central Utah',
-        centroidLat: 38.35,
-        centroidLng: -112.55,
-        huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
-      },
-      {
-        unitCode: 'UT009',
-        unitName: 'Fishlake',
-        species: 'Mule Deer, Elk',
-        region: 'Central Utah',
-        centroidLat: 38.72,
-        centroidLng: -111.65,
-        huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
-      },
-      {
-        unitCode: 'UT022',
-        unitName: 'Wasatch Mountains',
-        species: 'Mule Deer, Elk, Moose',
-        region: 'Northern Utah',
-        centroidLat: 40.55,
-        centroidLng: -111.55,
-        huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
-      }
-    ];
-
-    const outfitters = [
-      {
-        listingName: 'Wild Eyez Outfitters',
-        listingType: 'Outfitter',
-        certLevel: 'CPO',
-        verificationStatus: 'Verified',
-        website: 'https://www.wildeyez.net',
-        phone: '4358516480',
-        email: 'tyler@wildeyez.net',
-        species: 'Elk, Mule Deer',
-        region: 'Utah',
-        city: 'Manti',
-        unitsServed: 'UT001,UT009',
-        forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
-      }
-    ];
-
-    const federalDistricts = [
-      {
-        forestName: 'Fishlake National Forest',
-        districtName: 'Richfield Ranger District',
-        centerLat: 38.75,
-        centerLng: -112.10,
-        notes: 'Starter district layer placeholder.'
-      },
-      {
-        forestName: 'Manti-La Sal National Forest',
-        districtName: 'Sanpete Ranger District',
-        centerLat: 39.20,
-        centerLng: -111.45,
-        notes: 'Starter district layer placeholder.'
-      }
-    ];
-
-    // -----------------------------
-    // DOM refs
-    // -----------------------------
-    const searchInput = document.getElementById('searchInput');
-    const speciesFilter = document.getElementById('speciesFilter');
-    const unitFilter = document.getElementById('unitFilter');
-    const basemapSelect = document.getElementById('basemapSelect');
-    const toggleOutfitters = document.getElementById('toggleOutfitters');
-    const toggleDistricts = document.getElementById('toggleDistricts');
-    const toggleUnits = document.getElementById('toggleUnits');
-    const toggleLiveUnits = document.getElementById('toggleLiveUnits');
-    const openBoundaryBtn = document.getElementById('openBoundaryBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const resultsEl = document.getElementById('results');
-    const selectedTitle = document.getElementById('selectedTitle');
-    const selectedMeta = document.getElementById('selectedMeta');
-
-    let selectedUnit = null;
-    let liveHuntUnitsLayer = null;
-
-    // -----------------------------
-    // Helpers
-    // -----------------------------
-    function normalizeUrl(url) {
-      const raw = String(url || '').trim();
-      if (!raw) return '';
-      if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-      return `https://${raw}`;
+<script>
+  // -----------------------------
+  // Starter data you control
+  // -----------------------------
+  const huntUnits = [
+    {
+      unitCode: 'UT001',
+      unitName: 'Beaver',
+      species: 'Mule Deer, Elk',
+      region: 'Central Utah',
+      centroidLat: 38.35,
+      centroidLng: -112.55,
+      huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
+    },
+    {
+      unitCode: 'UT009',
+      unitName: 'Fishlake',
+      species: 'Mule Deer, Elk',
+      region: 'Central Utah',
+      centroidLat: 38.72,
+      centroidLng: -111.65,
+      huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
+    },
+    {
+      unitCode: 'UT022',
+      unitName: 'Wasatch Mountains',
+      species: 'Mule Deer, Elk, Moose',
+      region: 'Northern Utah',
+      centroidLat: 40.55,
+      centroidLng: -111.55,
+      huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
     }
+  ];
 
-    function formatPhone(phone) {
-      const digits = String(phone || '').replace(/\D/g, '');
-      if (digits.length === 10) {
-        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-      }
-      return String(phone || '');
+  const outfitters = [
+    {
+      listingName: 'Wild Eyez Outfitters',
+      listingType: 'Outfitter',
+      certLevel: 'CPO',
+      verificationStatus: 'Verified',
+      website: 'https://www.wildeyez.net',
+      phone: '4358516480',
+      email: 'tyler@wildeyez.net',
+      species: 'Elk, Mule Deer',
+      region: 'Utah',
+      city: 'Manti',
+      unitsServed: 'UT001,UT009',
+      forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
     }
+  ];
 
-    function safe(str) {
-      return String(str || '');
+  // -----------------------------
+  // DOM refs
+  // -----------------------------
+  const searchInput = document.getElementById('searchInput');
+  const speciesFilter = document.getElementById('speciesFilter');
+  const unitFilter = document.getElementById('unitFilter');
+  const basemapSelect = document.getElementById('basemapSelect');
+  const toggleOutfitters = document.getElementById('toggleOutfitters');
+  const toggleDistricts = document.getElementById('toggleDistricts');
+  const toggleUnits = document.getElementById('toggleUnits');
+  const toggleLiveUnits = document.getElementById('toggleLiveUnits');
+  const openBoundaryBtn = document.getElementById('openBoundaryBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const resultsEl = document.getElementById('results');
+  const selectedTitle = document.getElementById('selectedTitle');
+  const selectedMeta = document.getElementById('selectedMeta');
+
+  let selectedUnit = null;
+  let liveHuntUnitsLayer = null;
+  let usfsDistrictLayer = null;
+  let blmUtahLayer = null;
+
+  // -----------------------------
+  // Helpers
+  // -----------------------------
+  function normalizeUrl(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    return `https://${raw}`;
+  }
+
+  function formatPhone(phone) {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     }
+    return String(phone || '');
+  }
 
-    function getSelectedOutfitters() {
-      if (!selectedUnit) return [];
-      return outfitters.filter(o =>
-        safe(o.unitsServed)
-          .split(',')
-          .map(x => x.trim())
-          .includes(selectedUnit.unitCode)
-      );
-    }
+  function safe(str) {
+    return String(str || '');
+  }
 
-    // -----------------------------
-    // Map boot
-    // -----------------------------
-    const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+  function getSelectedOutfitters() {
+    if (!selectedUnit) return [];
+    return outfitters.filter(o =>
+      safe(o.unitsServed)
+        .split(',')
+        .map(x => x.trim())
+        .includes(selectedUnit.unitCode)
+    );
+  }
 
-    const basemaps = {
-      osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
-      }),
-      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        maxZoom: 17,
-        attribution: '&copy; OpenTopoMap'
-      }),
-      sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
-        attribution: 'Tiles &copy; Esri'
+  // -----------------------------
+  // Map boot
+  // -----------------------------
+  const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+  const basemaps = {
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }),
+    topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17,
+      attribution: '&copy; OpenTopoMap'
+    }),
+    sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    })
+  };
+
+  basemaps.osm.addTo(map);
+
+  const unitCenterLayer = L.layerGroup().addTo(map);
+  const outfitterLayer = L.layerGroup().addTo(map);
+
+  // -----------------------------
+  // Live layers
+  // -----------------------------
+  function buildLiveHuntUnitsLayer() {
+    if (liveHuntUnitsLayer) map.removeLayer(liveHuntUnitsLayer);
+
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
+      style: () => ({
+        color: '#ffc000',
+        weight: 2,
+        fillOpacity: 0.10
       })
-    };
+    });
 
-    basemaps.osm.addTo(map);
+    liveHuntUnitsLayer.bindPopup(layer => {
+      const p = layer.feature?.properties || {};
+      const unitName = p.UNIT_NAME || p.UnitName || p.NAME || 'Utah Hunt Unit';
+      return `<b>${unitName}</b><br>Live Utah hunt-unit layer`;
+    });
 
-    const unitCenterLayer = L.layerGroup().addTo(map);
-    const outfitterLayer = L.layerGroup().addTo(map);
-    const districtLayer = L.layerGroup().addTo(map);
+    if (toggleLiveUnits.checked) liveHuntUnitsLayer.addTo(map);
+  }
 
-    // -----------------------------
-    // Live Utah hunt unit layer
-    // -----------------------------
-    function buildLiveHuntUnitsLayer() {
-      if (liveHuntUnitsLayer) {
-        map.removeLayer(liveHuntUnitsLayer);
-      }
+  function buildUsfsDistrictLayer() {
+    if (usfsDistrictLayer) map.removeLayer(usfsDistrictLayer);
 
-      liveHuntUnitsLayer = L.esri.featureLayer({
-        url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
-        style: function () {
-          return {
-            color: '#ffc000',
-            weight: 2,
-            fillOpacity: 0.10
-          };
-        }
-      });
+    usfsDistrictLayer = L.esri.featureLayer({
+      url: 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_RangerDistricts_01/MapServer/1',
+      style: () => ({
+        color: '#4fa3ff',
+        weight: 2,
+        fillOpacity: 0.04
+      })
+    });
 
-      liveHuntUnitsLayer.bindPopup(function (layer) {
-        const props = layer.feature && layer.feature.properties ? layer.feature.properties : {};
-        const unitName =
-          props.UNIT_NAME ||
-          props.UnitName ||
-          props.NAME ||
-          'Utah Hunt Unit';
+    usfsDistrictLayer.bindPopup(layer => {
+      const p = layer.feature?.properties || {};
+      const forest = p.FORESTNAME || 'Forest Service';
+      const district = p.DISTRICTNAME || 'Ranger District';
+      return `<b>${forest}</b><br>${district}`;
+    });
 
-        return `<b>${unitName}</b><br>Live Utah hunt-unit layer`;
-      });
+    if (toggleDistricts.checked) usfsDistrictLayer.addTo(map);
+  }
 
-      if (toggleLiveUnits.checked) {
-        liveHuntUnitsLayer.addTo(map);
-      }
-    }
+  function buildBlmUtahLayer() {
+    if (blmUtahLayer) map.removeLayer(blmUtahLayer);
 
-    // -----------------------------
-    // Filters / UI
-    // -----------------------------
-    function populateSpecies() {
-      const speciesSet = new Set(['All Species']);
+    blmUtahLayer = L.esri.featureLayer({
+      url: 'https://gis.blm.gov/utarcgis/rest/services/AdminBoundaries/BLM_UT_ADMU/FeatureServer/0',
+      style: () => ({
+        color: '#9b59b6',
+        weight: 2,
+        fillOpacity: 0.03
+      })
+    });
 
-      huntUnits.forEach(u => {
-        safe(u.species)
-          .split(',')
-          .map(s => s.trim())
-          .filter(Boolean)
-          .forEach(s => speciesSet.add(s));
-      });
+    blmUtahLayer.bindPopup(layer => {
+      const p = layer.feature?.properties || {};
+      const district = p.ADMIN_DIST || p.ADMIN_DIST || p.DISTRICT || '';
+      const fieldOffice = p.ADMIN_UNIT || p.ADMIN_UNIT || p.FIELD_OFFICE || p.NAME || 'BLM Utah Administrative Unit';
+      return `<b>BLM Utah</b><br>${fieldOffice}${district ? `<br>${district}` : ''}`;
+    });
 
-      speciesFilter.innerHTML = Array.from(speciesSet)
-        .map(s => `<option value="${s}">${s}</option>`)
-        .join('');
-    }
+    if (toggleDistricts.checked) blmUtahLayer.addTo(map);
+  }
 
-    function populateUnits() {
-      const species = speciesFilter.value || 'All Species';
-      const search = safe(searchInput.value).trim().toLowerCase();
+  // -----------------------------
+  // Filters / UI
+  // -----------------------------
+  function populateSpecies() {
+    const speciesSet = new Set(['All Species']);
+    huntUnits.forEach(u => {
+      safe(u.species)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .forEach(s => speciesSet.add(s));
+    });
 
-      const filtered = huntUnits.filter(u => {
+    speciesFilter.innerHTML = Array.from(speciesSet)
+      .map(s => `<option value="${s}">${s}</option>`)
+      .join('');
+  }
+
+  function populateUnits() {
+    const species = speciesFilter.value || 'All Species';
+    const search = safe(searchInput.value).trim().toLowerCase();
+
+    const filtered = huntUnits.filter(u => {
+      const matchSpecies =
+        species === 'All Species' ||
+        safe(u.species).toLowerCase().includes(species.toLowerCase());
+
+      const matchSearch =
+        !search ||
+        safe(u.unitName).toLowerCase().includes(search) ||
+        safe(u.unitCode).toLowerCase().includes(search);
+
+      return matchSpecies && matchSearch;
+    });
+
+    unitFilter.innerHTML = [
+      '<option value="">Select Hunt Unit</option>',
+      ...filtered.map(u => `<option value="${u.unitCode}">${u.unitName}</option>`)
+    ].join('');
+  }
+
+  // -----------------------------
+  // Render custom layers
+  // -----------------------------
+  function renderUnitCenters() {
+    unitCenterLayer.clearLayers();
+    if (!toggleUnits.checked) return;
+
+    const species = speciesFilter.value || 'All Species';
+    const search = safe(searchInput.value).trim().toLowerCase();
+
+    huntUnits
+      .filter(u => {
         const matchSpecies =
           species === 'All Species' ||
           safe(u.species).toLowerCase().includes(species.toLowerCase());
@@ -628,237 +673,197 @@
           safe(u.unitCode).toLowerCase().includes(search);
 
         return matchSpecies && matchSearch;
-      });
-
-      unitFilter.innerHTML = [
-        '<option value="">Select Hunt Unit</option>',
-        ...filtered.map(u => `<option value="${u.unitCode}">${u.unitName}</option>`)
-      ].join('');
-    }
-
-    // -----------------------------
-    // Render layers
-    // -----------------------------
-    function renderUnitCenters() {
-      unitCenterLayer.clearLayers();
-      if (!toggleUnits.checked) return;
-
-      const species = speciesFilter.value || 'All Species';
-      const search = safe(searchInput.value).trim().toLowerCase();
-
-      huntUnits
-        .filter(u => {
-          const matchSpecies =
-            species === 'All Species' ||
-            safe(u.species).toLowerCase().includes(species.toLowerCase());
-
-          const matchSearch =
-            !search ||
-            safe(u.unitName).toLowerCase().includes(search) ||
-            safe(u.unitCode).toLowerCase().includes(search);
-
-          return matchSpecies && matchSearch;
-        })
-        .forEach(u => {
-          const marker = L.circleMarker([u.centroidLat, u.centroidLng], {
-            radius: 7,
-            color: '#ffc000',
-            weight: 2,
-            fillColor: '#ffc000',
-            fillOpacity: 0.75
-          }).addTo(unitCenterLayer);
-
-          marker.bindPopup(
-            `<b>${u.unitName}</b><br>${u.species}<br><button type="button" onclick="window.selectUnitByCode('${u.unitCode}')">Select Unit</button>`
-          );
-
-          marker.on('click', () => selectUnitByCode(u.unitCode));
-        });
-    }
-
-    function renderDistricts() {
-      districtLayer.clearLayers();
-      if (!toggleDistricts.checked) return;
-
-      federalDistricts.forEach(d => {
-        const marker = L.circleMarker([d.centerLat, d.centerLng], {
-          radius: 8,
-          color: '#4fa3ff',
+      })
+      .forEach(u => {
+        const marker = L.circleMarker([u.centroidLat, u.centroidLng], {
+          radius: 7,
+          color: '#ffc000',
           weight: 2,
-          fillColor: '#4fa3ff',
-          fillOpacity: 0.45
-        }).addTo(districtLayer);
+          fillColor: '#ffc000',
+          fillOpacity: 0.75
+        }).addTo(unitCenterLayer);
 
         marker.bindPopup(
-          `<b>${d.forestName}</b><br>${d.districtName}<br>${safe(d.notes)}`
-        );
-      });
-    }
-
-    function renderOutfitters() {
-      outfitterLayer.clearLayers();
-      if (!toggleOutfitters.checked) return;
-
-      const matches = getSelectedOutfitters();
-
-      matches.forEach((o, idx) => {
-        const unit = selectedUnit || huntUnits.find(u =>
-          safe(o.unitsServed).includes(u.unitCode)
+          `<b>${u.unitName}</b><br>${u.species}<br><button type="button" onclick="window.selectUnitByCode('${u.unitCode}')">Select Unit</button>`
         );
 
-        if (!unit) return;
-
-        const lat = unit.centroidLat + (idx * 0.04);
-        const lng = unit.centroidLng + (idx * 0.04);
-
-        const marker = L.marker([lat, lng]).addTo(outfitterLayer);
-
-        marker.bindPopup(`
-          <b>${safe(o.listingName)}</b><br>
-          ${safe(o.certLevel)} | ${safe(o.verificationStatus)}<br>
-          ${safe(o.city)}<br>
-          <a href="${normalizeUrl(o.website)}" target="_blank" rel="noopener noreferrer">Visit Website</a>
-        `);
+        marker.on('click', () => selectUnitByCode(u.unitCode));
       });
-    }
+  }
 
-    function renderResults() {
-      const matches = getSelectedOutfitters();
+  function renderOutfitters() {
+    outfitterLayer.clearLayers();
+    if (!toggleOutfitters.checked) return;
 
-      if (!selectedUnit) {
-        resultsEl.innerHTML = '<div class="empty">Select a hunt unit to load vetted outfitter results.</div>';
-        return;
-      }
+    const matches = getSelectedOutfitters();
 
-      if (!matches.length) {
-        resultsEl.innerHTML = `<div class="empty">No vetted outfitters currently loaded for ${safe(selectedUnit.unitName)}.</div>`;
-        return;
-      }
-
-      resultsEl.innerHTML = matches.map(o => `
-        <div class="result-card">
-          <h3>${safe(o.listingName)}</h3>
-          <div class="pill-row">
-            <span class="pill cert">${safe(o.certLevel) || 'Member'}</span>
-            <span class="pill verified">${safe(o.verificationStatus) || 'Listed'}</span>
-          </div>
-          <div class="meta">
-            <div><strong>City:</strong> ${safe(o.city)}</div>
-            <div><strong>Species:</strong> ${safe(o.species)}</div>
-            <div><strong>Phone:</strong> ${formatPhone(o.phone)}</div>
-            <div><strong>Districts:</strong> ${safe(o.forestDistricts)}</div>
-          </div>
-          <div class="result-actions">
-            <a href="${normalizeUrl(o.website)}" target="_blank" rel="noopener noreferrer">
-              <button type="button" class="btn-primary">Visit Website</button>
-            </a>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // -----------------------------
-    // Selection
-    // -----------------------------
-    function selectUnitByCode(unitCode) {
-      const unit = huntUnits.find(u => u.unitCode === unitCode);
+    matches.forEach((o, idx) => {
+      const unit = selectedUnit || huntUnits.find(u =>
+        safe(o.unitsServed).includes(u.unitCode)
+      );
       if (!unit) return;
 
-      selectedUnit = unit;
-      unitFilter.value = unit.unitCode;
-      selectedTitle.textContent = unit.unitName;
-      selectedMeta.textContent = `${safe(unit.species)} • ${safe(unit.region)}`;
+      const lat = unit.centroidLat + (idx * 0.04);
+      const lng = unit.centroidLng + (idx * 0.04);
 
-      map.setView([unit.centroidLat, unit.centroidLng], 8);
+      const marker = L.marker([lat, lng]).addTo(outfitterLayer);
 
-      renderOutfitters();
-      renderResults();
+      marker.bindPopup(`
+        <b>${safe(o.listingName)}</b><br>
+        ${safe(o.certLevel)} | ${safe(o.verificationStatus)}<br>
+        ${safe(o.city)}<br>
+        <a href="${normalizeUrl(o.website)}" target="_blank" rel="noopener noreferrer">Visit Website</a>
+      `);
+    });
+  }
+
+  function renderResults() {
+    const matches = getSelectedOutfitters();
+
+    if (!selectedUnit) {
+      resultsEl.innerHTML = '<div class="empty">Select a hunt unit to load vetted outfitter results.</div>';
+      return;
     }
 
-    window.selectUnitByCode = selectUnitByCode;
-
-    function resetPlanner() {
-      selectedUnit = null;
-      searchInput.value = '';
-      speciesFilter.value = 'All Species';
-      populateUnits();
-
-      selectedTitle.textContent = 'No hunt unit selected';
-      selectedMeta.textContent = 'Choose a species or unit to center the map and load vetted outfitter results.';
-
-      map.setView([39.3, -111.7], 6);
-
-      renderUnitCenters();
-      renderDistricts();
-      renderOutfitters();
-      renderResults();
+    if (!matches.length) {
+      resultsEl.innerHTML = `<div class="empty">No vetted outfitters currently loaded for ${safe(selectedUnit.unitName)}.</div>`;
+      return;
     }
 
-    // -----------------------------
-    // Events
-    // -----------------------------
-    searchInput.addEventListener('input', () => {
-      populateUnits();
-      renderUnitCenters();
-    });
+    resultsEl.innerHTML = matches.map(o => `
+      <div class="result-card">
+        <h3>${safe(o.listingName)}</h3>
+        <div class="pill-row">
+          <span class="pill cert">${safe(o.certLevel) || 'Member'}</span>
+          <span class="pill verified">${safe(o.verificationStatus) || 'Listed'}</span>
+        </div>
+        <div class="meta">
+          <div><strong>City:</strong> ${safe(o.city)}</div>
+          <div><strong>Species:</strong> ${safe(o.species)}</div>
+          <div><strong>Phone:</strong> ${formatPhone(o.phone)}</div>
+          <div><strong>Districts:</strong> ${safe(o.forestDistricts)}</div>
+        </div>
+        <div class="result-actions">
+          <a href="${normalizeUrl(o.website)}" target="_blank" rel="noopener noreferrer">
+            <button type="button" class="btn-primary">Visit Website</button>
+          </a>
+        </div>
+      </div>
+    `).join('');
+  }
 
-    speciesFilter.addEventListener('change', () => {
-      populateUnits();
-      renderUnitCenters();
-    });
+  // -----------------------------
+  // Selection
+  // -----------------------------
+  function selectUnitByCode(unitCode) {
+    const unit = huntUnits.find(u => u.unitCode === unitCode);
+    if (!unit) return;
 
-    unitFilter.addEventListener('change', () => {
-      if (!unitFilter.value) {
-        selectedUnit = null;
-        selectedTitle.textContent = 'No hunt unit selected';
-        selectedMeta.textContent = 'Choose a species or unit to center the map and load vetted outfitter results.';
-        renderOutfitters();
-        renderResults();
-        return;
-      }
+    selectedUnit = unit;
+    unitFilter.value = unit.unitCode;
+    selectedTitle.textContent = unit.unitName;
+    selectedMeta.textContent = `${safe(unit.species)} • ${safe(unit.region)}`;
 
-      selectUnitByCode(unitFilter.value);
-    });
+    map.setView([unit.centroidLat, unit.centroidLng], 8);
 
-    basemapSelect.addEventListener('change', () => {
-      Object.values(basemaps).forEach(layer => {
-        if (map.hasLayer(layer)) map.removeLayer(layer);
-      });
-
-      basemaps[basemapSelect.value].addTo(map);
-    });
-
-    toggleUnits.addEventListener('change', renderUnitCenters);
-    toggleDistricts.addEventListener('change', renderDistricts);
-    toggleOutfitters.addEventListener('change', renderOutfitters);
-
-    toggleLiveUnits.addEventListener('change', () => {
-      if (!liveHuntUnitsLayer) return;
-
-      if (toggleLiveUnits.checked) {
-        liveHuntUnitsLayer.addTo(map);
-      } else {
-        map.removeLayer(liveHuntUnitsLayer);
-      }
-    });
-
-    openBoundaryBtn.addEventListener('click', () => {
-      const link = selectedUnit?.huntBoundaryLink || 'https://dwrapps.utah.gov/huntboundary/hbstart';
-      window.open(link, '_blank', 'noopener,noreferrer');
-    });
-
-    resetBtn.addEventListener('click', resetPlanner);
-
-    // -----------------------------
-    // Initial boot
-    // -----------------------------
-    populateSpecies();
-    populateUnits();
-    buildLiveHuntUnitsLayer();
-    renderUnitCenters();
-    renderDistricts();
     renderOutfitters();
     renderResults();
-  </script>
+  }
+
+  window.selectUnitByCode = selectUnitByCode;
+
+  function resetPlanner() {
+    selectedUnit = null;
+    searchInput.value = '';
+    speciesFilter.value = 'All Species';
+    populateUnits();
+
+    selectedTitle.textContent = 'No hunt unit selected';
+    selectedMeta.textContent = 'Choose a species or unit to center the map and load vetted outfitter results.';
+
+    map.setView([39.3, -111.7], 6);
+
+    renderUnitCenters();
+    renderOutfitters();
+    renderResults();
+  }
+
+  // -----------------------------
+  // Events
+  // -----------------------------
+  searchInput.addEventListener('input', () => {
+    populateUnits();
+    renderUnitCenters();
+  });
+
+  speciesFilter.addEventListener('change', () => {
+    populateUnits();
+    renderUnitCenters();
+  });
+
+  unitFilter.addEventListener('change', () => {
+    if (!unitFilter.value) {
+      selectedUnit = null;
+      selectedTitle.textContent = 'No hunt unit selected';
+      selectedMeta.textContent = 'Choose a species or unit to center the map and load vetted outfitter results.';
+      renderOutfitters();
+      renderResults();
+      return;
+    }
+
+    selectUnitByCode(unitFilter.value);
+  });
+
+  basemapSelect.addEventListener('change', () => {
+    Object.values(basemaps).forEach(layer => {
+      if (map.hasLayer(layer)) map.removeLayer(layer);
+    });
+    basemaps[basemapSelect.value].addTo(map);
+
+    if (toggleLiveUnits.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
+    if (toggleDistricts.checked && usfsDistrictLayer) usfsDistrictLayer.addTo(map);
+    if (toggleDistricts.checked && blmUtahLayer) blmUtahLayer.addTo(map);
+  });
+
+  toggleUnits.addEventListener('change', renderUnitCenters);
+  toggleOutfitters.addEventListener('change', renderOutfitters);
+
+  toggleLiveUnits.addEventListener('change', () => {
+    if (!liveHuntUnitsLayer) return;
+    if (toggleLiveUnits.checked) liveHuntUnitsLayer.addTo(map);
+    else map.removeLayer(liveHuntUnitsLayer);
+  });
+
+  toggleDistricts.addEventListener('change', () => {
+    if (usfsDistrictLayer) {
+      if (toggleDistricts.checked) usfsDistrictLayer.addTo(map);
+      else map.removeLayer(usfsDistrictLayer);
+    }
+
+    if (blmUtahLayer) {
+      if (toggleDistricts.checked) blmUtahLayer.addTo(map);
+      else map.removeLayer(blmUtahLayer);
+    }
+  });
+
+  openBoundaryBtn.addEventListener('click', () => {
+    const link = selectedUnit?.huntBoundaryLink || 'https://dwrapps.utah.gov/huntboundary/hbstart';
+    window.open(link, '_blank', 'noopener,noreferrer');
+  });
+
+  resetBtn.addEventListener('click', resetPlanner);
+
+  // -----------------------------
+  // Initial boot
+  // -----------------------------
+  populateSpecies();
+  populateUnits();
+  buildLiveHuntUnitsLayer();
+  buildUsfsDistrictLayer();
+  buildBlmUtahLayer();
+  renderUnitCenters();
+  renderOutfitters();
+  renderResults();
+</script>  
 </body>
 </html>
