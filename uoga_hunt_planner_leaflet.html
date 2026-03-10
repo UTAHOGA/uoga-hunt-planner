@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>U.O.G.A. Hunt Planner</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #121922;
+      --panel-2: #18212d;
+      --line: #273243;
+      --text: #edf2f7;
+      --muted: #9fb0c3;
+      --accent: #ffc000;
+      --accent-2: #d39d00;
+      --danger: #cc4b37;
+      --ok: #3fa36a;
+      --shadow: 0 8px 24px rgba(0,0,0,.28);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: Inter, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    a { color: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 360px 1fr 360px;
+      height: 100vh;
+      gap: 0;
+    }
+
+    .sidebar, .results {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      overflow: auto;
+    }
+
+    .results {
+      border-right: none;
+      border-left: 1px solid var(--line);
+    }
+
+    .panel-inner { padding: 18px; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #171717;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .section-title {
+      margin: 18px 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .toggle input { transform: scale(1.1); }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary { background: var(--accent); color: #171717; }
+    .btn-secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+
+    #map-wrap {
+      position: relative;
+      background: #111;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-overlay {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      pointer-events: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 700;
+    }
+
+    .overlay-card {
+      pointer-events: auto;
+      background: rgba(18,25,34,.9);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      max-width: 420px;
+      backdrop-filter: blur(6px);
+    }
+
+    .overlay-card h2 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .overlay-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .result-card {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .result-card h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: #0f151d;
+      color: var(--muted);
+    }
+
+    .pill.cert { color: #171717; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+    .pill.verified { color: white; background: var(--ok); border-color: var(--ok); font-weight: 700; }
+
+    .meta {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .result-actions a {
+      text-decoration: none;
+      text-align: center;
+      flex: 1;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 14px;
+    }
+
+    .empty {
+      color: var(--muted);
+      background: var(--panel-2);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1200px) {
+      .app { grid-template-columns: 320px 1fr; }
+      .results { display: none; }
+    }
+
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto 55vh auto; height: auto; }
+      .sidebar, .results { border: none; }
+      #map-wrap { height: 55vh; }
+      .map-overlay { position: absolute; top: 10px; left: 10px; right: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="panel-inner">
+        <div class="brand">
+          <div class="brand-badge">UO</div>
+          <div>
+            <h1>U.O.G.A. Hunt Planner</h1>
+            <p>Leaflet-based planner with vetted outfitter overlays</p>
+          </div>
+        </div>
+
+        <div class="section-title">Find a Hunt</div>
+        <div class="field">
+          <label for="searchInput">Search</label>
+          <input id="searchInput" type="text" placeholder="Search units, outfitters, districts..." />
+        </div>
+        <div class="field">
+          <label for="speciesFilter">Species</label>
+          <select id="speciesFilter"></select>
+        </div>
+        <div class="field">
+          <label for="unitFilter">Hunt Unit</label>
+          <select id="unitFilter"></select>
+        </div>
+        <div class="field">
+          <label for="basemapSelect">Basemap</label>
+          <select id="basemapSelect">
+            <option value="osm">OpenStreetMap</option>
+            <option value="topo">Topo</option>
+            <option value="sat">Satellite</option>
+          </select>
+        </div>
+
+        <div class="section-title">Layers</div>
+        <div class="toggle-list">
+          <div class="toggle"><span>Vetted Outfitters</span><input id="toggleOutfitters" type="checkbox" checked /></div>
+          <div class="toggle"><span>Federal Forest Districts</span><input id="toggleDistricts" type="checkbox" checked /></div>
+          <div class="toggle"><span>Hunt Unit Centers</span><input id="toggleUnits" type="checkbox" checked /></div>
+        </div>
+
+        <div class="actions">
+          <button id="openBoundaryBtn" class="btn-primary">Open Official Boundary</button>
+          <button id="resetBtn" class="btn-secondary">Reset Planner</button>
+        </div>
+
+        <div class="small-note">
+          This app is the long-term engine. You can host it separately and embed it into Wix, instead of rebuilding the planner inside Wix five different ways.
+        </div>
+      </div>
+    </aside>
+
+    <main id="map-wrap">
+      <div id="map"></div>
+      <div class="map-overlay">
+        <div class="overlay-card">
+          <h2 id="selectedTitle">No hunt unit selected</h2>
+          <p id="selectedMeta">Choose a species or unit to center the map and load vetted outfitter results.</p>
+        </div>
+      </div>
+    </main>
+
+    <aside class="results">
+      <div class="panel-inner">
+        <div class="section-title">Vetted Outfitters</div>
+        <div id="results"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // --- Starter data. Replace these with your real JSON / CMS exports later. ---
+    const huntUnits = [
+      {
+        unitCode: 'UT001',
+        unitName: 'Beaver',
+        species: 'Mule Deer, Elk',
+        region: 'Central Utah',
+        centroidLat: 38.35,
+        centroidLng: -112.55,
+        huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
+      },
+      {
+        unitCode: 'UT009',
+        unitName: 'Fishlake',
+        species: 'Mule Deer, Elk',
+        region: 'Central Utah',
+        centroidLat: 38.72,
+        centroidLng: -111.65,
+        huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
+      },
+      {
+        unitCode: 'UT022',
+        unitName: 'Wasatch Mountains',
+        species: 'Mule Deer, Elk, Moose',
+        region: 'Northern Utah',
+        centroidLat: 40.55,
+        centroidLng: -111.55,
+        huntBoundaryLink: 'https://dwrapps.utah.gov/huntboundary/hbstart'
+      }
+    ];
+
+    const outfitters = [
+      {
+        listingName: 'Wild Eyez Outfitters',
+        listingType: 'Outfitter',
+        certLevel: 'CPO',
+        verificationStatus: 'Verified',
+        website: 'https://www.wildeyez.net',
+        phone: '4358516480',
+        email: 'tyler@wildeyez.net',
+        species: 'Elk, Mule Deer',
+        region: 'Utah',
+        city: 'Manti',
+        unitsServed: 'UT001,UT009',
+        forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
+      }
+    ];
+
+    const federalDistricts = [
+      {
+        forestName: 'Fishlake National Forest',
+        districtName: 'Richfield Ranger District',
+        centerLat: 38.75,
+        centerLng: -112.10,
+        notes: 'Starter district layer placeholder.'
+      },
+      {
+        forestName: 'Manti-La Sal National Forest',
+        districtName: 'Sanpete Ranger District',
+        centerLat: 39.20,
+        centerLng: -111.45,
+        notes: 'Starter district layer placeholder.'
+      }
+    ];
+
+    // --- Map boot ---
+    const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+    const basemaps = {
+      osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }),
+      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: '&copy; OpenTopoMap'
+      }),
+      sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      })
+    };
+
+    basemaps.osm.addTo(map);
+
+    const unitLayer = L.layerGroup().addTo(map);
+    const outfitterLayer = L.layerGroup().addTo(map);
+    const districtLayer = L.layerGroup().addTo(map);
+
+    const searchInput = document.getElementById('searchInput');
+    const speciesFilter = document.getElementById('speciesFilter');
+    const unitFilter = document.getElementById('unitFilter');
+    const basemapSelect = document.getElementById('basemapSelect');
+    const toggleOutfitters = document.getElementById('toggleOutfitters');
+    const toggleDistricts = document.getElementById('toggleDistricts');
+    const toggleUnits = document.getElementById('toggleUnits');
+    const openBoundaryBtn = document.getElementById('openBoundaryBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultsEl = document.getElementById('results');
+    const selectedTitle = document.getElementById('selectedTitle');
+    const selectedMeta = document.getElementById('selectedMeta');
+
+    let selectedUnit = null;
+
+    function formatPhone(phone) {
+      const digits = String(phone || '').replace(/\D/g, '');
+      if (digits.length === 10) return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+      return phone || '';
+    }
+
+    function populateSpecies() {
+      const speciesSet = new Set(['All Species']);
+      huntUnits.forEach(u => String(u.species || '').split(',').map(s => s.trim()).filter(Boolean).forEach(s => speciesSet.add(s)));
+      speciesFilter.innerHTML = Array.from(speciesSet).map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    function populateUnits() {
+      const species = speciesFilter.value;
+      const search = searchInput.value.trim().toLowerCase();
+
+      const filtered = huntUnits.filter(u => {
+        const matchSpecies = species === 'All Species' || String(u.species || '').toLowerCase().includes(species.toLowerCase());
+        const matchSearch = !search || String(u.unitName || '').toLowerCase().includes(search) || String(u.unitCode || '').toLowerCase().includes(search);
+        return matchSpecies && matchSearch;
+      });
+
+      unitFilter.innerHTML = ['<option value="">Select Hunt Unit</option>']
+        .concat(filtered.map(u => `<option value="${u.unitCode}">${u.unitName}</option>`))
+        .join('');
+    }
+
+    function renderUnits() {
+      unitLayer.clearLayers();
+      if (!toggleUnits.checked) return;
+
+      const species = speciesFilter.value;
+      const search = searchInput.value.trim().toLowerCase();
+
+      huntUnits
+        .filter(u => {
+          const matchSpecies = species === 'All Species' || String(u.species || '').toLowerCase().includes(species.toLowerCase());
+          const matchSearch = !search || String(u.unitName || '').toLowerCase().includes(search) || String(u.unitCode || '').toLowerCase().includes(search);
+          return matchSpecies && matchSearch;
+        })
+        .forEach(u => {
+          const marker = L.circleMarker([u.centroidLat, u.centroidLng], {
+            radius: 7,
+            color: '#ffc000',
+            weight: 2,
+            fillColor: '#ffc000',
+            fillOpacity: 0.7
+          }).addTo(unitLayer);
+
+          marker.bindPopup(`<b>${u.unitName}</b><br>${u.species}<br><button onclick="window.selectUnitByCode('${u.unitCode}')">Select Unit</button>`);
+          marker.on('click', () => selectUnitByCode(u.unitCode));
+        });
+    }
+
+    function renderDistricts() {
+      districtLayer.clearLayers();
+      if (!toggleDistricts.checked) return;
+
+      federalDistricts.forEach(d => {
+        const marker = L.circleMarker([d.centerLat, d.centerLng], {
+          radius: 8,
+          color: '#4fa3ff',
+          weight: 2,
+          fillColor: '#4fa3ff',
+          fillOpacity: 0.5
+        }).addTo(districtLayer);
+
+        marker.bindPopup(`<b>${d.forestName}</b><br>${d.districtName}<br>${d.notes || ''}`);
+      });
+    }
+
+    function renderOutfitters() {
+      outfitterLayer.clearLayers();
+      if (!toggleOutfitters.checked) return;
+
+      const matches = getSelectedOutfitters();
+      matches.forEach((o, idx) => {
+        const unit = selectedUnit || huntUnits.find(u => String(o.unitsServed || '').includes(u.unitCode));
+        if (!unit) return;
+
+        const lat = unit.centroidLat + (idx * 0.05);
+        const lng = unit.centroidLng + (idx * 0.05);
+
+        const marker = L.marker([lat, lng]).addTo(outfitterLayer);
+        marker.bindPopup(`<b>${o.listingName}</b><br>${o.certLevel || ''} | ${o.verificationStatus || ''}<br>${o.city || ''}<br><a href="${o.website}" target="_blank">Visit Website</a>`);
+      });
+    }
+
+    function getSelectedOutfitters() {
+      if (!selectedUnit) return [];
+      return outfitters.filter(o => String(o.unitsServed || '').split(',').map(x => x.trim()).includes(selectedUnit.unitCode));
+    }
+
+    function renderResults() {
+      const matches = getSelectedOutfitters();
+      if (!selectedUnit) {
+        resultsEl.innerHTML = '<div class="empty">Select a hunt unit to load vetted outfitter results.</div>';
+        return;
+      }
+
+      if (!matches.length) {
+        resultsEl.innerHTML = `<div class="empty">No vetted outfitters currently loaded for ${selectedUnit.unitName}. The page shell is working; now you load more member data.</div>`;
+        return;
+      }
+
+      resultsEl.innerHTML = matches.map(o => `
+        <div class="result-card">
+          <h3>${o.listingName}</h3>
+          <div class="pill-row">
+            <span class="pill cert">${o.certLevel || 'Member'}</span>
+            <span class="pill verified">${o.verificationStatus || 'Listed'}</span>
+          </div>
+          <div class="meta">
+            <div><strong>City:</strong> ${o.city || ''}</div>
+            <div><strong>Species:</strong> ${o.species || ''}</div>
+            <div><strong>Phone:</strong> ${formatPhone(o.phone)}</div>
+            <div><strong>Districts:</strong> ${o.forestDistricts || ''}</div>
+          </div>
+          <div class="result-actions">
+            <a href="${o.website}" target="_blank"><button class="btn-primary">Visit Website</button></a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectUnitByCode(unitCode) {
+      const unit = huntUnits.find(u => u.unitCode === unitCode);
+      if (!unit) return;
+      selectedUnit = unit;
+      unitFilter.value = unit.unitCode;
+      selectedTitle.textContent = `${unit.unitName}`;
+      selectedMeta.textContent = `${unit.species} • ${unit.region}`;
+      map.setView([unit.centroidLat, unit.centroidLng], 8);
+      renderOutfitters();
+      renderResults();
+    }
+
+    window.selectUnitByCode = selectUnitByCode;
+
+    function resetPlanner() {
+      selectedUnit = null;
+      searchInput.value = '';
+      speciesFilter.value = 'All Species';
+      populateUnits();
+      selectedTitle.textContent = 'No hunt unit selected';
+      selectedMeta.textContent = 'Choose a species or unit to center the map and load vetted outfitter results.';
+      map.setView([39.3, -111.7], 6);
+      renderUnits();
+      renderDistricts();
+      renderOutfitters();
+      renderResults();
+    }
+
+    searchInput.addEventListener('input', () => {
+      populateUnits();
+      renderUnits();
+    });
+
+    speciesFilter.addEventListener('change', () => {
+      populateUnits();
+      renderUnits();
+    });
+
+    unitFilter.addEventListener('change', () => {
+      if (!unitFilter.value) {
+        selectedUnit = null;
+        renderOutfitters();
+        renderResults();
+        selectedTitle.textContent = 'No hunt unit selected';
+        selectedMeta.textContent = 'Choose a species or unit to center the map and load vetted outfitter results.';
+        return;
+      }
+      selectUnitByCode(unitFilter.value);
+    });
+
+    basemapSelect.addEventListener('change', () => {
+      Object.values(basemaps).forEach(layer => {
+        if (map.hasLayer(layer)) map.removeLayer(layer);
+      });
+      basemaps[basemapSelect.value].addTo(map);
+    });
+
+    toggleUnits.addEventListener('change', renderUnits);
+    toggleDistricts.addEventListener('change', renderDistricts);
+    toggleOutfitters.addEventListener('change', renderOutfitters);
+
+    openBoundaryBtn.addEventListener('click', () => {
+      const link = selectedUnit?.huntBoundaryLink || 'https://dwrapps.utah.gov/huntboundary/hbstart';
+      window.open(link, '_blank');
+    });
+
+    resetBtn.addEventListener('click', resetPlanner);
+
+    populateSpecies();
+    populateUnits();
+    renderUnits();
+    renderDistricts();
+    renderOutfitters();
+    renderResults();
+  </script>
+</body>
+</html>
