@@ -286,6 +286,24 @@ basemaps.osm.addTo(map);
 
 const unitCenterLayer = L.layerGroup().addTo(map);
 const outfitterLayer = L.layerGroup().addTo(map);
+// -----------------------------
+// LIVE UTAH HUNT UNIT BOUNDARIES
+// -----------------------------
+
+liveHuntUnitsLayer = L.esri.featureLayer({
+url: "https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/0",
+
+style: function () {
+return {
+color: "#000",
+weight: 1,
+fillColor: "#ffc000",
+fillOpacity: 0.25
+};
+}
+});
+
+liveHuntUnitsLayer.addTo(map);
 const sitlaLayer = L.layerGroup().addTo(map);
 const stateLayer = L.layerGroup().addTo(map);
 const privateLayer = L.layerGroup().addTo(map);
