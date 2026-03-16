@@ -465,42 +465,72 @@ async function queryBoundaryNamesAndIds(huntCodes) {
 async function zoomToSelectedBoundary() {
   const token = ++boundaryZoomToken;
 
-  if (!selectedHunt || !liveHuntUnitsLayer || typeof liveHuntUnitsLayer.query !== 'function') {
+  if (!selectedHunt) {
+    map.setView([39.3, -111.7], 7);
     return;
   }
 
   try {
     const huntCode = getHuntCode(selectedHunt);
-    if (!huntCode) return;
+    if (!huntCode) {
+      map.setView([39.3, -111.7], 7);
+      return;
+    }
 
     const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
     if (token !== boundaryZoomToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
-    if (!where || where === '1=0') return;
+    if (!where || where === '1=0') {
+      map.setView([39.3, -111.7], 7);
+      return;
+    }
 
-    const featureCollection = await new Promise((resolve, reject) => {
-      liveHuntUnitsLayer.query().where(where).run((error, fc) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve(fc);
-      });
-    });
+    const url =
+      `${DWR_MAPSERVER}/0/query?` +
+      `where=${encodeURIComponent(where)}` +
+      '&returnExtentOnly=true' +
+      '&outSR=4326' +
+      '&f=json';
 
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Boundary extent query failed: ${response.status}`);
+    }
+
+    const payload = await response.json();
     if (token !== boundaryZoomToken) return;
 
-    const features = Array.isArray(featureCollection?.features) ? featureCollection.features : [];
-    if (!features.length) return;
+    const extent = payload?.extent;
+    const xmin = Number(extent?.xmin);
+    const ymin = Number(extent?.ymin);
+    const xmax = Number(extent?.xmax);
+    const ymax = Number(extent?.ymax);
 
-    const layer = L.geoJSON(featureCollection);
-    const bounds = layer.getBounds();
-    if (bounds && bounds.isValid()) {
-      map.fitBounds(bounds.pad(0.08));
+    const validUtahExtent =
+      [xmin, ymin, xmax, ymax].every(Number.isFinite) &&
+      xmin >= -114.75 &&
+      xmax <= -108.25 &&
+      ymin >= 36.5 &&
+      ymax <= 42.5 &&
+      xmin < xmax &&
+      ymin < ymax;
+
+    if (!validUtahExtent) {
+      map.setView([39.3, -111.7], 7);
+      return;
     }
+
+    map.fitBounds(
+      [
+        [ymin, xmin],
+        [ymax, xmax]
+      ],
+      { padding: [24, 24] }
+    );
   } catch (err) {
     console.error('Boundary zoom failed:', err);
+    map.setView([39.3, -111.7], 7);
   }
 }
 
@@ -586,7 +616,7 @@ function renderUnitCenters() {
 
     const lat = getHuntLat(h);
     const lng = getHuntLng(h);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (!isLikelyUtahCoordinate(lat, lng)) return;
 
     const marker = L.marker([lat, lng], {
       icon: createDiamondIcon()
@@ -1012,3 +1042,4 @@ map.on('click', e => {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
     }
   }
+})();
