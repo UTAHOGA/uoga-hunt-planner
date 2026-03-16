@@ -5,9 +5,6 @@ let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
 
-// -----------------------------
-// Sample outfitter data
-// -----------------------------
 const outfitters = [
   {
     listingName: 'Wild Eyez Outfitters',
@@ -20,7 +17,7 @@ const outfitters = [
     species: 'Elk, Mule Deer',
     region: 'Utah',
     city: 'Manti',
-    unitsServed: 'beaver-east,fishlake,manti-san-rafael,monroe,fillmore,nebo',
+    unitsServed: 'beaver-east,fishlake',
     forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
   }
 ];
@@ -57,12 +54,17 @@ const huntResultsEl = document.getElementById('huntResults');
 const resultsEl = document.getElementById('results');
 const areaInfoEl = document.getElementById('areaInfo');
 const clickInfoEl = document.getElementById('clickInfo');
+const huntCountEl = document.getElementById('huntCount');
 
 // -----------------------------
 // Helpers
 // -----------------------------
 function safe(value) {
   return String(value ?? '');
+}
+
+function normalizeToken(value) {
+  return safe(value).trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 function escapeHtml(value) {
@@ -106,66 +108,176 @@ function firstNonEmpty(...values) {
   return '';
 }
 
+function firstFinite(...values) {
+  for (const value of values) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function matchesFilterValue(selectedValue, recordValue) {
+  const selected = normalizeToken(selectedValue);
+  const record = normalizeToken(recordValue);
+
+  if (!selected || selected === 'all' || selected === 'all species') return true;
+  if (!record) return false;
+  if (selected === record) return true;
+
+  // Treat Buck/Bull as a parent category that includes Buck/Bull variants.
+  if (selected === 'buck/bull' && (record === 'buck' || record === 'bull' || record === 'buck/bull')) {
+    return true;
+  }
+
+  return record.includes(selected) || selected.includes(record);
+}
+
+// -----------------------------
+// Hunt field mappers
+// -----------------------------
 function getHuntTitle(h) {
-  return firstNonEmpty(h.title, h.huntCode);
+  return firstNonEmpty(
+    h.title,
+    h.Title,
+    h.huntTitle,
+    h.hunt_title,
+    h.name,
+    h.Name,
+    h.huntCode,
+    h.hunt_code,
+    h.HuntCode
+  );
 }
 
 function getHuntCode(h) {
-  return firstNonEmpty(h.huntCode);
+  return firstNonEmpty(
+    h.huntCode,
+    h.hunt_code,
+    h.HuntCode,
+    h.code,
+    h.Code,
+    h.huntId,
+    h.hunt_id
+  );
 }
 
 function getSpeciesRaw(h) {
-  return firstNonEmpty(h.species);
+  return firstNonEmpty(
+    h.species,
+    h.Species,
+    h.SPECIES,
+    h.animal,
+    h.Animal,
+    h.ANIMAL
+  );
 }
 
 function getSpeciesList(h) {
   const raw = getSpeciesRaw(h);
   if (!raw) return [];
-  return raw.split(',').map(v => v.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
 }
 
 function getSex(h) {
-  return firstNonEmpty(h.sex);
+  return firstNonEmpty(h.sex, h.Sex, h.SEX, h.gender, h.Gender);
 }
 
 function getWeapon(h) {
-  return firstNonEmpty(h.weapon);
+  return firstNonEmpty(
+    h.weapon,
+    h.Weapon,
+    h.WEAPON,
+    h.weaponType,
+    h.weapon_type
+  );
 }
 
 function getHuntType(h) {
-  return firstNonEmpty(h.huntType);
+  return firstNonEmpty(
+    h.huntType,
+    h.HuntType,
+    h.hunt_type,
+    h.type,
+    h.Type
+  );
 }
 
 function getSeasonDates(h) {
-  return firstNonEmpty(h.seasonLabel, h.seasonDates, h.dates);
+  return firstNonEmpty(
+    h.seasonDates,
+    h.SeasonDates,
+    h.dates,
+    h.Dates,
+    h.dateRange,
+    h.date_range
+  );
 }
 
 function getRegion(h) {
-  return firstNonEmpty(h.region);
+  return firstNonEmpty(h.region, h.Region, h.REGION, h.area, h.Area);
 }
 
 function getUnitCode(h) {
-  return firstNonEmpty(h.unitCode);
+  return firstNonEmpty(
+    h.unitCode,
+    h.unit_code,
+    h.UnitCode,
+    h.UNIT_CODE,
+    h.unit,
+    h.Unit,
+    h.UNIT,
+    h.unitId,
+    h.unit_id
+  );
 }
 
 function getUnitName(h) {
-  return firstNonEmpty(h.unitName, h.unitCode);
+  return firstNonEmpty(
+    h.unitName,
+    h.unit_name,
+    h.UnitName,
+    h.UNIT_NAME,
+    h.areaName,
+    h.area_name,
+    h.AreaName,
+    getUnitCode(h)
+  );
 }
 
 function getUnitValue(h) {
-  return firstNonEmpty(h.unitCode, h.unitName);
+  return firstNonEmpty(getUnitCode(h), getUnitName(h));
 }
 
-function getBoundaryLink(h) {
-  return firstNonEmpty(h.boundaryLink);
+function getHuntLat(h) {
+  return firstFinite(
+    h.centroidLat,
+    h.centerLat,
+    h.lat,
+    h.latitude,
+    h.Latitude,
+    h.y,
+    h.Y,
+    h.CENTER_LAT,
+    h.CENTROID_LAT
+  );
 }
 
-function getOfficialBoundaryUrl(h) {
-  const boundaryLink = getBoundaryLink(h);
-  if (boundaryLink) return boundaryLink;
-  const huntCode = getHuntCode(h);
-  if (!huntCode) return 'https://dwrapps.utah.gov/huntboundary/hbstart';
-  return `https://dwrapps.utah.gov/huntboundary/hbstart?HN=${encodeURIComponent(huntCode)}`;
+function getHuntLng(h) {
+  return firstFinite(
+    h.centroidLng,
+    h.centerLng,
+    h.lng,
+    h.lon,
+    h.longitude,
+    h.Longitude,
+    h.x,
+    h.X,
+    h.CENTER_LON,
+    h.CENTROID_LON
+  );
 }
 
 // -----------------------------
@@ -202,35 +314,77 @@ const privateLayer = L.layerGroup().addTo(map);
 let liveHuntUnitsLayer = null;
 let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
+let huntResultsLimit = 100;
+let filteredHuntsCache = { key: null, data: [] };
+let filterDebounceTimer = null;
 
 // -----------------------------
 // Load hunt data
 // -----------------------------
 async function loadHuntData() {
-  const filePath = './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json';
-  const response = await fetch(filePath, { cache: 'no-store' });
+  const response = await fetch('./data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json');
 
   if (!response.ok) {
-    throw new Error(`Failed to load hunt data from ${filePath} (${response.status})`);
+    throw new Error(`Failed to load hunt data: ${response.status}`);
   }
 
   const data = await response.json();
+  console.log('RAW JSON:', data);
 
-  if (!data || !Array.isArray(data.records)) {
-    throw new Error('JSON loaded, but records array was not found.');
+  if (Array.isArray(data)) {
+    huntData = data;
+  } else if (Array.isArray(data.records)) {
+    huntData = data.records;
+  } else if (Array.isArray(data.data)) {
+    huntData = data.data;
+  } else if (Array.isArray(data.features)) {
+    huntData = data.features.map(f => f.properties || f);
+  } else {
+    huntData = [];
+    console.error('No usable array found in hunt JSON.');
   }
 
-  huntData = data.records;
-
-  if (!huntData.length) {
-    throw new Error('Records array is empty.');
+  console.log('Loaded hunts:', huntData.length);
+  if (huntData.length) {
+    console.log('First hunt record:', huntData[0]);
+    console.log('First hunt keys:', Object.keys(huntData[0]));
   }
 }
 
 // -----------------------------
-// Filters
+// Filtering
 // -----------------------------
+function getFilterSignature() {
+  return JSON.stringify({
+    search: safe(searchInput?.value).trim().toLowerCase(),
+    species: safe(speciesFilter?.value || 'All Species'),
+    sex: safe(sexFilter?.value || 'All'),
+    weapon: safe(weaponFilter?.value || 'All'),
+    huntType: safe(huntTypeFilter?.value || 'All'),
+    unit: safe(unitFilter?.value || '')
+  });
+}
+
+function queueFilterRender() {
+  if (filterDebounceTimer) {
+    window.clearTimeout(filterDebounceTimer);
+  }
+
+  filterDebounceTimer = window.setTimeout(() => {
+    huntResultsLimit = 100;
+    filteredHuntsCache.key = null;
+    populateUnits();
+    renderUnitCenters();
+    renderHuntResults();
+  }, 120);
+}
+
 function getFilteredHunts() {
+  const signature = getFilterSignature();
+  if (filteredHuntsCache.key === signature) {
+    return filteredHuntsCache.data;
+  }
+
   const search = safe(searchInput?.value).trim().toLowerCase();
   const species = safe(speciesFilter?.value || 'All Species');
   const sex = safe(sexFilter?.value || 'All');
@@ -238,7 +392,7 @@ function getFilteredHunts() {
   const huntType = safe(huntTypeFilter?.value || 'All');
   const unitValue = safe(unitFilter?.value || '');
 
-  return huntData.filter(h => {
+  const filtered = huntData.filter(h => {
     const title = getHuntTitle(h).toLowerCase();
     const huntCode = getHuntCode(h).toLowerCase();
     const unitName = getUnitName(h).toLowerCase();
@@ -259,17 +413,11 @@ function getFilteredHunts() {
       species === 'All Species' ||
       speciesList.includes(species.toLowerCase());
 
-    const matchSex =
-      sex === 'All' ||
-      sexValue === sex.toLowerCase();
+    const matchSex = matchesFilterValue(sex, sexValue);
 
-    const matchWeapon =
-      weapon === 'All' ||
-      weaponValue === weapon.toLowerCase();
+    const matchWeapon = matchesFilterValue(weapon, weaponValue);
 
-    const matchHuntType =
-      huntType === 'All' ||
-      huntTypeValue === huntType.toLowerCase();
+    const matchHuntType = matchesFilterValue(huntType, huntTypeValue);
 
     const matchUnit =
       !unitValue ||
@@ -277,60 +425,87 @@ function getFilteredHunts() {
       getUnitName(h) === unitValue ||
       getUnitCode(h) === unitValue;
 
-    return matchSearch && matchSpecies && matchSex && matchWeapon && matchHuntType && matchUnit;
+    return (
+      matchSearch &&
+      matchSpecies &&
+      matchSex &&
+      matchWeapon &&
+      matchHuntType &&
+      matchUnit
+    );
   });
+
+  filteredHuntsCache = {
+    key: signature,
+    data: filtered
+  };
+
+  return filtered;
 }
 
 // -----------------------------
-// Dropdown population
+// Dropdowns
 // -----------------------------
 function populateSpecies() {
   if (!speciesFilter) return;
 
-  const selected = speciesFilter.value || 'All Species';
-  const set = new Set(['All Species']);
+  const existingValue = speciesFilter.value || 'All Species';
+  const speciesSet = new Set(['All Species']);
 
   huntData.forEach(h => {
     getSpeciesList(h).forEach(s => {
-      if (s) set.add(s);
+      if (s) speciesSet.add(s);
     });
   });
 
-  const options = Array.from(set).sort((a, b) => {
+  const options = Array.from(speciesSet).sort((a, b) => {
     if (a === 'All Species') return -1;
     if (b === 'All Species') return 1;
     return a.localeCompare(b);
   });
 
+  console.log('Species options:', options);
+
   speciesFilter.innerHTML = options
-    .map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`)
+    .map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)
     .join('');
 
-  speciesFilter.value = options.includes(selected) ? selected : 'All Species';
+  if (options.includes(existingValue)) {
+    speciesFilter.value = existingValue;
+  } else {
+    speciesFilter.value = 'All Species';
+  }
 }
 
 function populateUnits() {
   if (!unitFilter) return;
 
-  const selected = unitFilter.value || '';
+  const existingValue = unitFilter.value;
   const units = new Map();
 
   getFilteredHunts().forEach(h => {
     const value = getUnitValue(h);
     const label = getUnitName(h) || value;
+
     if (!value) return;
     if (!units.has(value)) units.set(value, label);
   });
 
-  const options = Array.from(units.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  const options = Array.from(units.entries()).sort((a, b) => {
+    return a[1].localeCompare(b[1]);
+  });
+
+  console.log('Unit options:', options);
 
   unitFilter.innerHTML = [
     '<option value="">All Units</option>',
-    ...options.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`)
+    ...options.map(([value, label]) => {
+      return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+    })
   ].join('');
 
-  if (options.some(([value]) => value === selected)) {
-    unitFilter.value = selected;
+  if (options.some(([value]) => value === existingValue)) {
+    unitFilter.value = existingValue;
   } else {
     unitFilter.value = '';
   }
@@ -348,8 +523,15 @@ function getSelectedOutfitters() {
 
   return outfitters
     .filter(o => {
-      const served = safe(o.unitsServed).split(',').map(v => slugify(v));
-      return served.includes(unitCodeSlug) || served.includes(unitNameSlug) || served.includes(unitValueSlug);
+      const served = safe(o.unitsServed)
+        .split(',')
+        .map(v => slugify(v));
+
+      return (
+        served.includes(unitCodeSlug) ||
+        served.includes(unitNameSlug) ||
+        served.includes(unitValueSlug)
+      );
     })
     .filter(o => {
       const cert = safe(o.certLevel).toUpperCase();
@@ -360,88 +542,108 @@ function getSelectedOutfitters() {
 }
 
 // -----------------------------
-// Layers
+// ESRI layers
 // -----------------------------
 function buildLiveHuntUnitsLayer() {
-  // Use dynamicMapLayer instead of featureLayer.
-  // It renders the actual DWR hunt boundary service as a map image,
-  // which is much more reliable for a static site.
   if (!window.L?.esri) {
-    console.error('Esri Leaflet not loaded.');
+    console.warn('Esri Leaflet missing. Live hunt unit layer skipped.');
     return;
   }
 
-  if (liveHuntUnitsLayer) {
-    try {
-      map.removeLayer(liveHuntUnitsLayer);
-    } catch (e) {
-      // ignore
-    }
-  }
+  if (liveHuntUnitsLayer) map.removeLayer(liveHuntUnitsLayer);
 
+  const applyFallbackLayer = () => {
+    if (liveHuntUnitsLayer) {
+      try { map.removeLayer(liveHuntUnitsLayer); } catch (e) { /* noop */ }
+    }
+
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
+      style: () => ({
+        color: '#ffc000',
+        weight: 2,
+        fillOpacity: 0.08
+      })
+    });
+
+    if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
+    console.warn('Using fallback live hunt units layer.');
+  };
+
+  // Use the official DWR map service as the primary source for live boundaries.
   liveHuntUnitsLayer = L.esri.dynamicMapLayer({
     url: 'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer',
-    opacity: 0.85,
-    layers: [0]
+    layers: [0],
+    opacity: 0.85
   });
 
-  if (toggleLiveUnits?.checked) {
-    liveHuntUnitsLayer.addTo(map);
-  }
+  liveHuntUnitsLayer.on('loading', () => {
+    console.log('Loading live Utah hunt units layer...');
+  });
+
+  liveHuntUnitsLayer.on('load', () => {
+    console.log('Live Utah hunt units layer loaded.');
+  });
+
+  liveHuntUnitsLayer.on('error', err => {
+    console.error('Live hunt units layer error:', err);
+    applyFallbackLayer();
+  });
+
+  if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
 }
 
 function buildUSFSLayer() {
-  if (!window.L?.esri) return;
-
-  if (usfsDistrictLayer) {
-    try {
-      map.removeLayer(usfsDistrictLayer);
-    } catch (e) {
-      // ignore
-    }
+  if (!window.L?.esri) {
+    console.warn('Esri Leaflet missing. USFS layer skipped.');
+    return;
   }
+
+  if (usfsDistrictLayer) map.removeLayer(usfsDistrictLayer);
 
   usfsDistrictLayer = L.esri.featureLayer({
     url: 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_RangerDistricts_01/MapServer/1',
-    style: function () {
-      return {
-        color: '#4fa3ff',
-        weight: 2,
-        fillOpacity: 0.03
-      };
-    }
+    style: () => ({
+      color: '#4fa3ff',
+      weight: 2,
+      fillOpacity: 0.03
+    })
   });
 
-  if (toggleUSFS?.checked) {
-    usfsDistrictLayer.addTo(map);
-  }
+  usfsDistrictLayer.bindPopup(layer => {
+    const p = layer.feature?.properties || {};
+    const forest = firstNonEmpty(p.FORESTNAME, 'Forest Service');
+    const district = firstNonEmpty(p.DISTRICTNAME, 'Ranger District');
+    return `<b>${escapeHtml(forest)}</b><br>${escapeHtml(district)}`;
+  });
+
+  if (toggleUSFS?.checked) usfsDistrictLayer.addTo(map);
 }
 
 function buildBLMLayer() {
-  if (!window.L?.esri) return;
-
-  if (blmDistrictLayer) {
-    try {
-      map.removeLayer(blmDistrictLayer);
-    } catch (e) {
-      // ignore
-    }
+  if (!window.L?.esri) {
+    console.warn('Esri Leaflet missing. BLM layer skipped.');
+    return;
   }
+
+  if (blmDistrictLayer) map.removeLayer(blmDistrictLayer);
 
   blmDistrictLayer = L.esri.featureLayer({
     url: 'https://gis.blm.gov/utarcgis/rest/services/AdminBoundaries/BLM_UT_ADMU/FeatureServer/0',
-    style: function () {
-      return {
-        color: '#9b59b6',
-        weight: 2,
-        fillOpacity: 0.03
-      };
-    }
+    style: () => ({
+      color: '#9b59b6',
+      weight: 2,
+      fillOpacity: 0.03
+    })
   });
 
-  if (toggleBLM?.checked) {
-    blmDistrictLayer.addTo(map);
-  }
+  blmDistrictLayer.bindPopup(layer => {
+    const p = layer.feature?.properties || {};
+    const office = firstNonEmpty(p.ADMIN_UNIT, p.FIELD_OFFICE, p.NAME, 'BLM Utah Administrative Unit');
+    return `<b>BLM Utah</b><br>${escapeHtml(office)}`;
+  });
+
+  if (toggleBLM?.checked) blmDistrictLayer.addTo(map);
 }
 
 function renderOwnershipPlaceholders() {
@@ -450,93 +652,186 @@ function renderOwnershipPlaceholders() {
   privateLayer.clearLayers();
 
   if (toggleSITLA?.checked) {
-    L.marker([39.15, -111.7]).addTo(sitlaLayer).bindPopup('SITLA layer placeholder');
+    L.circleMarker([39.05, -111.9], {
+      radius: 8,
+      color: '#58a55c',
+      weight: 2,
+      fillColor: '#58a55c',
+      fillOpacity: 0.35
+    })
+      .addTo(sitlaLayer)
+      .bindPopup('<b>SITLA</b><br>Placeholder layer until real SITLA data is added.');
   }
 
   if (toggleState?.checked) {
-    L.marker([39.05, -111.4]).addTo(stateLayer).bindPopup('State lands layer placeholder');
+    L.circleMarker([40.1, -111.9], {
+      radius: 8,
+      color: '#2aa198',
+      weight: 2,
+      fillColor: '#2aa198',
+      fillOpacity: 0.35
+    })
+      .addTo(stateLayer)
+      .bindPopup('<b>State Lands</b><br>Placeholder layer until real state-land data is added.');
   }
 
   if (togglePrivate?.checked) {
-    L.marker([38.95, -111.2]).addTo(privateLayer).bindPopup('Private lands layer placeholder');
+    L.circleMarker([38.9, -111.2], {
+      radius: 8,
+      color: '#b24b4b',
+      weight: 2,
+      fillColor: '#b24b4b',
+      fillOpacity: 0.35
+    })
+      .addTo(privateLayer)
+      .bindPopup('<b>Private Lands</b><br>Placeholder layer until real private-land data is added.');
   }
 }
 
 // -----------------------------
-// Renderers
+// Rendering
 // -----------------------------
 function renderUnitCenters() {
   unitCenterLayer.clearLayers();
 
   if (toggleUnits && !toggleUnits.checked) return;
 
-  const units = new Map();
+  const filtered = getFilteredHunts();
+  const seen = new Set();
+  let renderedCount = 0;
 
-  getFilteredHunts().forEach(h => {
-    const value = getUnitValue(h);
-    const label = getUnitName(h) || value;
-    if (!value) return;
-    if (!units.has(value)) units.set(value, label);
+  filtered.forEach(h => {
+    const unitValue = getUnitValue(h);
+    const unitName = getUnitName(h);
+    const lat = getHuntLat(h);
+    const lng = getHuntLng(h);
+
+    if (!unitValue) return;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (seen.has(unitValue)) return;
+
+    seen.add(unitValue);
+
+    const marker = L.circleMarker([lat, lng], {
+      radius: 7,
+      color: '#ffc000',
+      weight: 2,
+      fillColor: '#ffc000',
+      fillOpacity: 0.75
+    }).addTo(unitCenterLayer);
+
+    marker.bindPopup(`
+      <b>${escapeHtml(unitName || unitValue)}</b><br>
+      ${escapeHtml(getSpeciesRaw(h))}<br>
+      <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(unitValue)}">
+        Select Unit
+      </button>
+    `);
+
+    marker.on('click', () => selectUnitByValue(unitValue));
+    renderedCount += 1;
   });
 
-  const list = Array.from(units.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  // Fallback for hunt tables that have no unit centroid coordinates.
+  if (renderedCount === 0 && filtered.length > 0) {
+    const units = new Map();
 
-  if (!list.length) return;
+    filtered.forEach(h => {
+      const value = getUnitValue(h);
+      const label = getUnitName(h) || value;
+      if (!value) return;
+      if (!units.has(value)) units.set(value, label);
+    });
 
-  const html = list.map(([value, label]) => {
-    return `
-      <div style="margin-bottom:8px;">
-        <button
-          type="button"
-          style="width:100%;padding:8px;border-radius:8px;border:1px solid #273243;background:#18212d;color:#edf2f7;cursor:pointer;"
-          onclick="window.selectUnitByValue(${JSON.stringify(value)})"
-        >
+    const list = Array.from(units.entries())
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .slice(0, 60);
+
+    if (!list.length) return;
+
+    const html = list.map(([value, label]) => `
+      <div style="margin:0 0 8px 0;">
+        <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(value)}">
           ${escapeHtml(label)}
         </button>
       </div>
-    `;
-  }).join('');
+    `).join('');
 
-  const marker = L.marker([39.3, -111.7], { opacity: 0 }).addTo(unitCenterLayer);
-  marker.bindPopup(`
-    <div style="min-width:220px;max-height:300px;overflow:auto;">
-      <b>Filtered Hunt Units</b>
-      <div style="margin-top:10px;">${html}</div>
-    </div>
-  `);
+    L.marker(map.getCenter(), { opacity: 0 })
+      .addTo(unitCenterLayer)
+      .bindPopup(`
+        <div style="min-width:220px;max-height:280px;overflow:auto;">
+          <strong>Filtered Hunt Units</strong>
+          <div style="margin-top:10px;">${html}</div>
+        </div>
+      `)
+      .openPopup();
+  }
 }
 
 function renderHuntResults() {
   if (!huntResultsEl) return;
 
   const filtered = getFilteredHunts();
+  const total = filtered.length;
+  const shown = Math.min(huntResultsLimit, total);
 
-  if (!filtered.length) {
+  if (huntCountEl) huntCountEl.textContent = String(total);
+
+  if (!total) {
     huntResultsEl.innerHTML = '<div class="empty">No hunts match the current filters.</div>';
     return;
   }
 
-  huntResultsEl.innerHTML = filtered.slice(0, 100).map(h => `
-    <div class="result-card">
-      <h3>${escapeHtml(getHuntTitle(h))}</h3>
-      <div class="pill-row">
-        <span class="pill">${escapeHtml(getSpeciesRaw(h))}</span>
-        <span class="pill">${escapeHtml(getSex(h) || 'N/A')}</span>
-        <span class="pill">${escapeHtml(getWeapon(h) || 'N/A')}</span>
-        <span class="pill">${escapeHtml(getHuntType(h) || 'N/A')}</span>
+  const cardsHtml = filtered.slice(0, shown).map(h => {
+    const huntCode = getHuntCode(h);
+    const title = getHuntTitle(h) || getUnitName(h) || huntCode || 'Untitled Hunt';
+    const unitName = getUnitName(h) || 'Unknown Unit';
+    const isSelected = selectedHunt && getHuntCode(selectedHunt) === huntCode;
+
+    return `
+      <div class="result-card ${isSelected ? 'selected' : ''}">
+        <h3>${escapeHtml(title)}</h3>
+        <div class="pill-row">
+          <span class="pill">${escapeHtml(getSpeciesRaw(h) || 'Species N/A')}</span>
+          <span class="pill">${escapeHtml(getSex(h) || 'Sex N/A')}</span>
+          <span class="pill">${escapeHtml(getWeapon(h) || 'Weapon N/A')}</span>
+          <span class="pill">${escapeHtml(getHuntType(h) || 'Type N/A')}</span>
+        </div>
+        <div class="meta">
+          <div><strong>Unit:</strong> ${escapeHtml(unitName)}</div>
+          <div><strong>Hunt Code:</strong> ${escapeHtml(huntCode)}</div>
+          <div><strong>Dates:</strong> ${escapeHtml(getSeasonDates(h))}</div>
+        </div>
+        <div class="result-actions">
+          <button
+            type="button"
+            class="btn-primary"
+            data-hunt-code="${escapeHtml(huntCode)}"
+            data-action="select-hunt"
+          >
+            Select Hunt
+          </button>
+        </div>
       </div>
-      <div class="meta">
-        <div><strong>Unit:</strong> ${escapeHtml(getUnitName(h))}</div>
-        <div><strong>Hunt Code:</strong> ${escapeHtml(getHuntCode(h))}</div>
-        <div><strong>Dates:</strong> ${escapeHtml(getSeasonDates(h))}</div>
-      </div>
+    `;
+  }).join('');
+
+  const moreHtml = shown < total
+    ? `
       <div class="result-actions">
-        <button type="button" class="btn-primary" onclick="window.selectHuntByCode(${JSON.stringify(getHuntCode(h))})">
-          Select Hunt
+        <button type="button" class="btn-secondary" data-action="show-more-hunts">
+          Show more hunts (${shown} of ${total})
         </button>
       </div>
-    </div>
-  `).join('');
+    `
+    : '';
+
+  huntResultsEl.innerHTML = `
+    ${cardsHtml}
+    <div class="result-meta-row">Showing ${shown} of ${total} matching hunts.</div>
+    ${moreHtml}
+  `;
 }
 
 function renderAreaInfo() {
@@ -547,21 +842,15 @@ function renderAreaInfo() {
     return;
   }
 
-  const officialUrl = getOfficialBoundaryUrl(selectedHunt);
-
   areaInfoEl.innerHTML = `
-    <strong>Hunt:</strong> ${escapeHtml(getHuntTitle(selectedHunt))}<br>
-    <strong>Unit:</strong> ${escapeHtml(getUnitName(selectedHunt))}<br>
+    <strong>Hunt:</strong> ${escapeHtml(getHuntTitle(selectedHunt) || getHuntCode(selectedHunt))}<br>
+    <strong>Unit:</strong> ${escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt))}<br>
     <strong>Species:</strong> ${escapeHtml(getSpeciesRaw(selectedHunt))}<br>
     <strong>Sex:</strong> ${escapeHtml(getSex(selectedHunt))}<br>
     <strong>Weapon:</strong> ${escapeHtml(getWeapon(selectedHunt))}<br>
     <strong>Hunt Type:</strong> ${escapeHtml(getHuntType(selectedHunt))}<br>
     <strong>Dates:</strong> ${escapeHtml(getSeasonDates(selectedHunt))}<br>
-    <div style="margin-top:10px;">
-      <a href="${escapeHtml(officialUrl)}" target="_blank" rel="noopener noreferrer">
-        Open official DWR boundary for this hunt
-      </a>
-    </div>
+    <small>Land-management context depends on the overlays you turn on.</small>
   `;
 }
 
@@ -572,13 +861,17 @@ function renderOutfitters() {
   if (!selectedHunt) return;
 
   const matches = getSelectedOutfitters();
+  const baseLat = getHuntLat(selectedHunt);
+  const baseLng = getHuntLng(selectedHunt);
 
-  // Use simple Utah offsets near center since local hunt data has no coordinates.
-  const baseLat = 39.3;
-  const baseLng = -111.7;
+  if (!Number.isFinite(baseLat) || !Number.isFinite(baseLng)) return;
 
   matches.forEach((o, idx) => {
-    const marker = L.marker([baseLat + idx * 0.15, baseLng + idx * 0.15]).addTo(outfitterLayer);
+    const lat = baseLat + (idx * 0.03);
+    const lng = baseLng + (idx * 0.03);
+
+    const marker = L.marker([lat, lng]).addTo(outfitterLayer);
+
     marker.bindPopup(`
       <b>${escapeHtml(o.listingName)}</b><br>
       ${escapeHtml(o.certLevel)} | ${escapeHtml(o.verificationStatus)}<br>
@@ -599,7 +892,7 @@ function renderOutfitterResults() {
   const matches = getSelectedOutfitters();
 
   if (!matches.length) {
-    resultsEl.innerHTML = `<div class="empty">No outfitters currently loaded for ${escapeHtml(getUnitName(selectedHunt))}.</div>`;
+    resultsEl.innerHTML = `<div class="empty">No outfitters currently loaded for ${escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt))}.</div>`;
     return;
   }
 
@@ -629,32 +922,37 @@ function renderOutfitterResults() {
 // Selection
 // -----------------------------
 function selectUnitByValue(unitValue) {
-  const hunt = huntData.find(h => {
-    return getUnitValue(h) === unitValue || getUnitName(h) === unitValue || getUnitCode(h) === unitValue;
+  const huntsForUnit = huntData.filter(h => {
+    return (
+      getUnitValue(h) === unitValue ||
+      getUnitName(h) === unitValue ||
+      getUnitCode(h) === unitValue
+    );
   });
 
-  if (!hunt) return;
+  if (!huntsForUnit.length) return;
 
-  selectedHunt = hunt;
+  const chosen = huntsForUnit[0];
+  selectedHunt = chosen;
   selectedUnit = unitValue;
 
   if (unitFilter) unitFilter.value = unitValue;
-  if (selectedTitle) selectedTitle.textContent = getUnitName(hunt);
+  if (selectedTitle) selectedTitle.textContent = getUnitName(chosen) || unitValue;
   if (selectedMeta) {
-    selectedMeta.textContent = [getSpeciesRaw(hunt), getRegion(hunt)].filter(Boolean).join(' • ');
+    selectedMeta.textContent = [getSpeciesRaw(chosen), getRegion(chosen)].filter(Boolean).join(' • ');
+  }
+
+  const lat = getHuntLat(chosen);
+  const lng = getHuntLng(chosen);
+
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    map.setView([lat, lng], 8);
   }
 
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
   renderHuntResults();
-
-  if (clickInfoEl) {
-    clickInfoEl.innerHTML = `
-      <strong>Selected Unit:</strong> ${escapeHtml(getUnitName(hunt))}<br>
-      <strong>Hunt Code:</strong> ${escapeHtml(getHuntCode(hunt))}
-    `;
-  }
 }
 
 function selectHuntByCode(huntCode) {
@@ -665,22 +963,24 @@ function selectHuntByCode(huntCode) {
   selectedUnit = getUnitValue(hunt);
 
   if (unitFilter) unitFilter.value = selectedUnit;
-  if (selectedTitle) selectedTitle.textContent = getHuntTitle(hunt);
+  if (selectedTitle) {
+    selectedTitle.textContent = getHuntTitle(hunt) || getUnitName(hunt) || huntCode;
+  }
   if (selectedMeta) {
     selectedMeta.textContent = [getSpeciesRaw(hunt), getRegion(hunt)].filter(Boolean).join(' • ');
+  }
+
+  const lat = getHuntLat(hunt);
+  const lng = getHuntLng(hunt);
+
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    map.setView([lat, lng], 8);
   }
 
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
   renderHuntResults();
-
-  if (clickInfoEl) {
-    clickInfoEl.innerHTML = `
-      <strong>Selected Hunt:</strong> ${escapeHtml(getHuntTitle(hunt))}<br>
-      <strong>Unit:</strong> ${escapeHtml(getUnitName(hunt))}
-    `;
-  }
 }
 
 window.selectUnitByValue = selectUnitByValue;
@@ -692,6 +992,8 @@ window.selectHuntByCode = selectHuntByCode;
 function resetPlanner() {
   selectedHunt = null;
   selectedUnit = null;
+  huntResultsLimit = 100;
+  filteredHuntsCache.key = null;
 
   if (searchInput) searchInput.value = '';
   if (speciesFilter) speciesFilter.value = 'All Species';
@@ -715,10 +1017,6 @@ function resetPlanner() {
   renderOutfitters();
   renderOutfitterResults();
   renderHuntResults();
-
-  if (clickInfoEl) {
-    clickInfoEl.innerHTML = 'Click the map to inspect the selected area.';
-  }
 }
 
 // -----------------------------
@@ -727,11 +1025,7 @@ function resetPlanner() {
 [searchInput, speciesFilter, sexFilter, weaponFilter, huntTypeFilter].forEach(el => {
   if (!el) return;
 
-  const handler = () => {
-    populateUnits();
-    renderUnitCenters();
-    renderHuntResults();
-  };
+  const handler = () => queueFilterRender();
 
   el.addEventListener('input', handler);
   el.addEventListener('change', handler);
@@ -739,6 +1033,9 @@ function resetPlanner() {
 
 if (unitFilter) {
   unitFilter.addEventListener('change', () => {
+    huntResultsLimit = 100;
+    filteredHuntsCache.key = null;
+
     if (!unitFilter.value) {
       selectedHunt = null;
       selectedUnit = null;
@@ -767,16 +1064,16 @@ if (basemapSelect) {
 
     (basemaps[basemapSelect.value] || basemaps.osm).addTo(map);
 
-    if (toggleLiveUnits?.checked && liveHuntUnitsLayer) map.addLayer(liveHuntUnitsLayer);
-    if (toggleUSFS?.checked && usfsDistrictLayer) map.addLayer(usfsDistrictLayer);
-    if (toggleBLM?.checked && blmDistrictLayer) map.addLayer(blmDistrictLayer);
+    if (toggleLiveUnits?.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
+    if (toggleUSFS?.checked && usfsDistrictLayer) usfsDistrictLayer.addTo(map);
+    if (toggleBLM?.checked && blmDistrictLayer) blmDistrictLayer.addTo(map);
   });
 }
 
 if (toggleLiveUnits) {
   toggleLiveUnits.addEventListener('change', () => {
     if (!liveHuntUnitsLayer) return;
-    if (toggleLiveUnits.checked) map.addLayer(liveHuntUnitsLayer);
+    if (toggleLiveUnits.checked) liveHuntUnitsLayer.addTo(map);
     else map.removeLayer(liveHuntUnitsLayer);
   });
 }
@@ -788,7 +1085,7 @@ if (toggleUnits) {
 if (toggleUSFS) {
   toggleUSFS.addEventListener('change', () => {
     if (!usfsDistrictLayer) return;
-    if (toggleUSFS.checked) map.addLayer(usfsDistrictLayer);
+    if (toggleUSFS.checked) usfsDistrictLayer.addTo(map);
     else map.removeLayer(usfsDistrictLayer);
   });
 }
@@ -796,7 +1093,7 @@ if (toggleUSFS) {
 if (toggleBLM) {
   toggleBLM.addEventListener('change', () => {
     if (!blmDistrictLayer) return;
-    if (toggleBLM.checked) map.addLayer(blmDistrictLayer);
+    if (toggleBLM.checked) blmDistrictLayer.addTo(map);
     else map.removeLayer(blmDistrictLayer);
   });
 }
@@ -816,17 +1113,48 @@ if (toggleBLM) {
 
 if (openBoundaryBtn) {
   openBoundaryBtn.addEventListener('click', () => {
-    if (selectedHunt) {
-      window.open(getOfficialBoundaryUrl(selectedHunt), '_blank', 'noopener,noreferrer');
-    } else {
-      window.open('https://dwrapps.utah.gov/huntboundary/hbstart', '_blank', 'noopener,noreferrer');
-    }
+    const selectedLink = normalizeUrl(selectedHunt?.boundaryLink);
+    const fallback = 'https://dwrapps.utah.gov/huntboundary/hbstart';
+    window.open(selectedLink || fallback, '_blank', 'noopener,noreferrer');
   });
 }
 
 if (resetBtn) {
   resetBtn.addEventListener('click', resetPlanner);
 }
+
+if (huntResultsEl) {
+  huntResultsEl.addEventListener('click', e => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const actionBtn = target.closest('button[data-action]');
+    if (!actionBtn) return;
+
+    const action = actionBtn.dataset.action;
+    if (action === 'select-hunt') {
+      const huntCode = safe(actionBtn.dataset.huntCode).trim();
+      if (huntCode) selectHuntByCode(huntCode);
+      return;
+    }
+
+    if (action === 'show-more-hunts') {
+      huntResultsLimit += 100;
+      renderHuntResults();
+    }
+  });
+}
+
+document.addEventListener('click', e => {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+
+  const unitBtn = target.closest('.js-select-unit');
+  if (!unitBtn) return;
+
+  const unitValue = safe(unitBtn.getAttribute('data-unit')).trim();
+  if (unitValue) selectUnitByValue(unitValue);
+});
 
 map.on('click', e => {
   if (clickInfoEl) {
@@ -864,22 +1192,20 @@ map.on('click', e => {
     renderOutfitterResults();
     renderHuntResults();
 
-    if (clickInfoEl) {
-      clickInfoEl.innerHTML = 'Click the map to inspect the selected area.';
-    }
+    console.log('App initialized successfully.');
   } catch (err) {
-    console.error('INIT FAILED:', err);
+    console.error('App init failed:', err);
 
     if (speciesFilter) {
       speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
     }
 
     if (unitFilter) {
-      unitFilter.innerHTML = '<option value="">All Units</option>';
+      unitFilter.innerHTML = '<option value="">Load Failed</option>';
     }
 
     if (huntResultsEl) {
-      huntResultsEl.innerHTML = `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`;
+      huntResultsEl.innerHTML = `<div class="empty">Failed to load hunt data. ${escapeHtml(err.message || String(err))}</div>`;
     }
 
     if (resultsEl) {
@@ -887,7 +1213,7 @@ map.on('click', e => {
     }
 
     if (areaInfoEl) {
-      areaInfoEl.innerHTML = 'App failed to initialize. Check the browser console for the exact error.';
+      areaInfoEl.innerHTML = 'App failed to initialize. Open the browser console and check the error.';
     }
   }
 })();
