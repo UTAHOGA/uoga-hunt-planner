@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>U.O.G.A. Hunt Planner</title>
+  <title>U.O.G.A. Hunt Planner - Vetted Outfitters</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -39,11 +39,11 @@
 
     .app {
       display: grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: 320px 1fr 320px;
       height: 100vh;
     }
 
-    .sidebar, .results {
+    .sidebar, .results, .outfitters-panel {
       background: var(--panel);
       overflow: auto;
     }
@@ -52,7 +52,13 @@
       border-right: 1px solid var(--line);
       background: linear-gradient(180deg, rgba(255,252,246,.97), rgba(245,236,220,.97));
     }
+
     .results { border-left: none; }
+
+    .outfitters-panel {
+      border-left: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,252,246,.97), rgba(245,236,220,.97));
+    }
 
     .panel-inner { padding: 10px; }
 
@@ -97,12 +103,14 @@
       font-weight: 700;
       letter-spacing: .02em;
     }
+
     .section-title-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
     }
+
     .count-chip {
       display: inline-flex;
       align-items: center;
@@ -237,11 +245,15 @@
 
     #map-wrap {
       position: relative;
-      background: #111;
+      background: #d9d2c3;
       min-width: 0;
+      min-height: 100vh;
+      overflow: hidden;
     }
 
     #map {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
     }
@@ -282,6 +294,32 @@
       line-height: 1.4;
     }
 
+    .map-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 290px;
+    }
+
+    .map-brand img {
+      width: 74px;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .map-brand h2 {
+      margin: 0 0 3px;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .map-brand p {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
     .result-card {
       background: var(--panel2);
       border: 1px solid var(--line);
@@ -289,6 +327,7 @@
       padding: 10px;
       margin-bottom: 8px;
     }
+
     .result-card.selected {
       border-color: var(--accent);
       box-shadow: 0 0 0 1px rgba(255, 192, 0, 0.35) inset;
@@ -355,6 +394,7 @@
       line-height: 1.5;
       margin-top: 14px;
     }
+
     .result-meta-row {
       margin-top: 10px;
       color: var(--muted);
@@ -528,6 +568,10 @@
       display: none;
     }
 
+    .outfitters-panel .panel-inner {
+      padding: 10px;
+    }
+
     .sidebar .section-title:first-of-type {
       margin-top: 0;
     }
@@ -535,17 +579,20 @@
     @media (max-width: 1200px) {
       .app {
         grid-template-columns: 300px 1fr;
-        grid-template-rows: 1fr auto;
+        grid-template-rows: 1fr auto auto;
       }
+
       .sidebar {
         grid-column: 1;
         grid-row: 1;
       }
+
       #map-wrap {
         grid-column: 2;
         grid-row: 1;
         min-height: 60vh;
       }
+
       .results {
         position: static;
         grid-column: 1 / -1;
@@ -555,21 +602,30 @@
         border-radius: 0;
         max-height: 42vh;
       }
+
+      .outfitters-panel {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        border-left: none;
+        border-top: 1px solid var(--line);
+      }
     }
 
     @media (max-width: 860px) {
       .app {
         grid-template-columns: 1fr;
-        grid-template-rows: auto 55vh auto;
+        grid-template-rows: auto 55vh auto auto;
         height: auto;
       }
 
-      .sidebar, .results {
+      .sidebar, .results, .outfitters-panel {
         border: none;
       }
 
       #map-wrap {
+        position: relative;
         height: 55vh;
+        min-height: 55vh;
       }
 
       .map-overlay {
@@ -583,6 +639,10 @@
         max-height: none;
         border-top: 1px solid var(--line);
         border-radius: 0;
+      }
+
+      .outfitters-panel {
+        border-top: 1px solid var(--line);
       }
 
       .results-columns,
@@ -600,8 +660,8 @@
         <div class="brand">
           <div class="brand-badge">UO</div>
           <div>
-            <h1>Utah Hunt Planner</h1>
-            <p>Utah outfitter overlay on a DWR-style map</p>
+            <h1>U.O.G.A. Hunt Planner</h1>
+            <p>Vetted Outfitters</p>
           </div>
         </div>
 
@@ -682,7 +742,7 @@
         <div class="toggle-list">
           <div class="toggle"><span>Live Utah Hunt Units</span><input id="toggleLiveUnits" type="checkbox" checked /></div>
           <div class="toggle"><span>Hunt Unit Centers</span><input id="toggleUnits" type="checkbox" checked /></div>
-          <div class="toggle"><span>USFS Districts</span><input id="toggleUSFS" type="checkbox" checked /></div>
+          <div class="toggle"><span>USFS Forests</span><input id="toggleUSFS" type="checkbox" checked /></div>
           <div class="toggle"><span>BLM Districts</span><input id="toggleBLM" type="checkbox" checked /></div>
           <div class="toggle"><span>SITLA</span><input id="toggleSITLA" type="checkbox" /></div>
           <div class="toggle"><span>State Lands</span><input id="toggleState" type="checkbox" /></div>
@@ -702,7 +762,7 @@
         </div>
 
         <div class="small-note">
-          Live now: Utah hunt-unit polygons, USFS districts, BLM districts, Utah ownership overlays, and vetted outfitter layer. Hunt records should load from your JSON file in the data folder through app.js.
+          Live now: Utah hunt-unit polygons, USFS forests, BLM districts, Utah ownership overlays, and vetted outfitter layer. Hunt records should load from your JSON file in the data folder through app.js.
         </div>
       </div>
     </aside>
@@ -710,11 +770,23 @@
     <main id="map-wrap">
       <div id="map"></div>
       <div class="map-overlay">
+        <div class="overlay-card map-brand">
+          <img
+            src="https://static.wixstatic.com/media/43f827_24f00cd070494533955d4910eef3a2fb~mv2.jpg/v1/fill/w_207,h_105,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Group%20945%20(1).jpg"
+            alt="U.O.G.A. logo"
+          />
+          <div>
+            <h2>U.O.G.A. Hunt Planner</h2>
+            <p>Vetted Outfitters</p>
+          </div>
+        </div>
+
         <div class="overlay-card">
           <h2 id="selectedTitle">No hunt selected</h2>
           <p id="selectedMeta">Choose filters or click a hunt unit to load hunt and outfitter results.</p>
         </div>
       </div>
+
       <aside class="results">
         <div class="results-heading">
           <h3>Matching Hunts</h3>
@@ -723,6 +795,7 @@
             <button id="toggleResultsTray" type="button" class="tray-toggle" aria-label="Collapse hunt table">˅</button>
           </div>
         </div>
+
         <div class="results-columns">
           <span>Hunt Name</span>
           <span>Hunt Number</span>
@@ -732,6 +805,7 @@
           <span>Hunt Type / Dates</span>
           <span>Action</span>
         </div>
+
         <div class="panel-inner">
           <div id="huntResults" class="empty table-like" style="margin-bottom:12px;">No hunt data loaded yet.</div>
 
@@ -746,12 +820,16 @@
               <div id="clickInfo" class="empty" style="margin-bottom:12px;">Click the map to inspect the selected area.</div>
             </div>
           </div>
-
-          <div class="section-title">Vetted Outfitters</div>
-          <div id="results"></div>
         </div>
       </aside>
     </main>
+
+    <aside class="outfitters-panel">
+      <div class="panel-inner">
+        <div class="section-title">Vetted Outfitters</div>
+        <div id="results"></div>
+      </div>
+    </aside>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
