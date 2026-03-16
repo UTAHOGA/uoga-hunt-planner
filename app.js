@@ -29,7 +29,7 @@ const DWR_HUNT_TABLE = `${DWR_MAPSERVER}/1`;
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
-  cache: [41.78, -111.62],
+  'cache': [41.78, -111.62],
   'chalk-creek-east': [40.88, -111.07],
   'diamond-mountain': [40.42, -109.18],
   'fillmore-oak-creek': [38.95, -112.33],
@@ -421,6 +421,7 @@ function buildLiveHuntUnitsLayer() {
   };
 
   try {
+    // Use FeatureLayer so we can control line weight and fill directly.
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: `${DWR_MAPSERVER}/0`,
       style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
@@ -482,7 +483,7 @@ function applyLiveBoundaryWhere(whereClause) {
   if (!liveHuntUnitsLayer) return;
 
   if (liveLayerSource === 'dwr-feature' && typeof liveHuntUnitsLayer.setWhere === 'function') {
-    liveHuntUnitsLayer.setWhere(whereClause || 'Status = 1');
+    liveHuntUnitsLayer.setWhere(whereClause || '1=1');
     return;
   }
 
@@ -616,33 +617,10 @@ function buildBoundaryFilterSql(names, ids) {
 }
 
 async function refreshLiveBoundaryFilter() {
-  const token = ++liveFilterToken;
-
   if (!liveHuntUnitsLayer) return;
-
-  if (liveLayerSource !== 'dwr-feature') {
-    applyLiveBoundaryWhere('1=1');
-    return;
-  }
-
-  const codes = selectedHunt
-    ? [getHuntCode(selectedHunt)].filter(Boolean)
-    : Array.from(new Set(getFilteredHunts().map(h => getHuntCode(h)).filter(Boolean)));
-
-  if (!codes.length) {
-    applyLiveBoundaryWhere('1=0');
-    return;
-  }
-
-  try {
-    const { names, ids } = await queryBoundaryNamesAndIds(codes);
-    if (token !== liveFilterToken) return;
-
-    applyLiveBoundaryWhere(buildBoundaryFilterSql(names, ids));
-  } catch (err) {
-    console.error('Boundary filter failed:', err);
-    applyLiveBoundaryWhere('Status = 1');
-  }
+  // Keep all Utah hunt boundaries visible for now.
+  // Selection zoom is handled separately with trusted unit centers / DWR extent lookup.
+  applyLiveBoundaryWhere('1=1');
 }
 
 function renderOwnershipPlaceholders() {
