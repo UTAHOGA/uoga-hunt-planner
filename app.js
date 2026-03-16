@@ -1,850 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>U.O.G.A. Hunt Planner - Vetted Outfitters</title>
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-  <style>
-    :root {
-      --bg: #f6f1e7;
-      --panel: rgba(255, 252, 246, 0.95);
-      --panel2: #fffdf8;
-      --line: #caa98b;
-      --text: #473526;
-      --muted: #826d5b;
-      --accent: #ba622d;
-      --accent2: #d08d4f;
-      --ok: #5f8f5a;
-      --blue: #3653b3;
-      --purple: #8b4f7d;
-      --green: #476f2d;
-      --red: #b24b4b;
-      --shadow: 0 8px 24px rgba(78, 57, 33, .12);
-    }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    a { color: inherit; }
-
-    .app {
-      display: grid;
-      grid-template-columns: 320px 1fr 320px;
-      height: 100vh;
-    }
-
-    .sidebar, .results, .outfitters-panel {
-      background: var(--panel);
-      overflow: auto;
-    }
-
-    .sidebar {
-      border-right: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,252,246,.97), rgba(245,236,220,.97));
-    }
-
-    .results { border-left: none; }
-
-    .outfitters-panel {
-      border-left: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,252,246,.97), rgba(245,236,220,.97));
-    }
-
-    .panel-inner { padding: 10px; }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      padding: 6px 8px 10px;
-    }
-
-    .brand-badge {
-      width: 34px;
-      height: 34px;
-      border-radius: 4px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fffaf2;
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.1;
-    }
-
-    .brand p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 10px;
-    }
-
-    .section-title {
-      margin: 10px 0 6px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: linear-gradient(180deg, #c96b33, #b25928);
-      color: #fff6ed;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .02em;
-    }
-
-    .section-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .count-chip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 40px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: var(--panel2);
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .field {
-      display: grid;
-      gap: 4px;
-      margin-bottom: 6px;
-    }
-
-    .or-divider {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 2px 0 6px;
-    }
-
-    .or-divider span {
-      display: inline-block;
-      padding: 1px 12px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #c96b33, #b25928);
-      color: #fff6ed;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      box-shadow: 0 1px 2px rgba(78, 57, 33, .15);
-    }
-
-    .field-stack {
-      background: rgba(255,255,255,.38);
-      border: 1px solid #d7c3aa;
-      border-radius: 6px;
-      padding: 8px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
-    }
-
-    .field label {
-      font-size: 11px;
-      color: var(--muted);
-      padding-left: 3px;
-    }
-
-    input[type="text"], select {
-      width: 100%;
-      background: var(--panel2);
-      border: 1px solid var(--line);
-      color: var(--text);
-      border-radius: 4px;
-      padding: 6px 8px;
-      height: 32px;
-      font-size: 12px;
-      outline: none;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
-    }
-
-    .hunt-select {
-      appearance: none;
-      background-image:
-        linear-gradient(45deg, transparent 50%, #8d6849 50%),
-        linear-gradient(135deg, #8d6849 50%, transparent 50%);
-      background-position:
-        calc(100% - 16px) calc(50% - 2px),
-        calc(100% - 10px) calc(50% - 2px);
-      background-size: 6px 6px, 6px 6px;
-      background-repeat: no-repeat;
-    }
-
-    input[type="text"]:focus,
-    select:focus {
-      border-color: var(--accent);
-    }
-
-    .toggle-list {
-      display: grid;
-      gap: 4px;
-      margin-top: 6px;
-    }
-
-    .toggle {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--panel2);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      padding: 6px 8px;
-      font-size: 11px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
-    }
-
-    .toggle input { transform: scale(1); }
-
-    .actions {
-      display: grid;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 4px;
-      padding: 7px 10px;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 12px;
-      font-family: inherit;
-    }
-
-    .btn-primary {
-      background: linear-gradient(180deg, #c96b33, #b25928);
-      color: #fffaf2;
-    }
-
-    .btn-secondary {
-      background: var(--panel2);
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-
-    #map-wrap {
-      position: relative;
-      background: #d9d2c3;
-      min-width: 0;
-      min-height: 100vh;
-      overflow: hidden;
-    }
-
-    #map {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .map-overlay {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      z-index: 700;
-      pointer-events: none;
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .overlay-card {
-      pointer-events: auto;
-      background: rgba(255,250,241,.92);
-      border: 1px solid var(--line);
-      color: var(--text);
-      border-radius: 4px;
-      padding: 8px 10px;
-      box-shadow: var(--shadow);
-      max-width: 420px;
-      backdrop-filter: blur(6px);
-    }
-
-    .overlay-card h2 {
-      margin: 0 0 6px;
-      font-size: 14px;
-    }
-
-    .overlay-card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.4;
-    }
-
-    .map-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 290px;
-    }
-
-    .map-brand img {
-      width: 74px;
-      height: auto;
-      object-fit: contain;
-      display: block;
-    }
-
-    .map-brand h2 {
-      margin: 0 0 3px;
-      font-size: 18px;
-      line-height: 1.1;
-    }
-
-    .map-brand p {
-      margin: 0;
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .result-card {
-      background: var(--panel2);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      padding: 10px;
-      margin-bottom: 8px;
-    }
-
-    .result-card.selected {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px rgba(255, 192, 0, 0.35) inset;
-    }
-
-    .result-card h3 {
-      margin: 0 0 8px;
-      font-size: 15px;
-    }
-
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      border: 1px solid var(--line);
-      background: #f1e8da;
-      color: var(--muted);
-    }
-
-    .pill.cert {
-      color: #fffaf2;
-      background: var(--accent);
-      border-color: var(--accent);
-      font-weight: 700;
-    }
-
-    .pill.verified {
-      color: white;
-      background: var(--ok);
-      border-color: var(--ok);
-      font-weight: 700;
-    }
-
-    .meta {
-      display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 12px;
-    }
-
-    .result-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .result-actions a {
-      text-decoration: none;
-      text-align: center;
-      flex: 1;
-    }
-
-    .small-note {
-      color: var(--muted);
-      font-size: 10px;
-      line-height: 1.5;
-      margin-top: 14px;
-    }
-
-    .result-meta-row {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .empty {
-      color: var(--muted);
-      background: var(--panel2);
-      border: 1px dashed var(--line);
-      border-radius: 4px;
-      padding: 12px;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .leaflet-popup-content-wrapper,
-    .leaflet-popup-tip {
-      background: #f4ede0;
-      color: var(--text);
-    }
-
-    .leaflet-container a {
-      color: var(--accent);
-    }
-
-    .results {
-      background: rgba(255,250,241,.94);
-      position: absolute;
-      left: 14px;
-      right: 14px;
-      bottom: 14px;
-      z-index: 650;
-      border: 2px solid #c96b33;
-      border-radius: 6px;
-      box-shadow: 0 10px 28px rgba(78, 57, 33, .18);
-      max-height: 34vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .results .panel-inner {
-      padding: 10px;
-      overflow: auto;
-    }
-
-    .results-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(240,228,209,.7));
-    }
-
-    .results-heading h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .results-heading-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .tray-toggle {
-      width: auto;
-      min-width: 38px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      background: rgba(255,255,255,.75);
-      color: var(--accent);
-      border: 1px solid var(--line);
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .table-like .result-card {
-      display: grid;
-      grid-template-columns: 1.3fr 0.9fr 0.8fr 0.9fr 1fr 1.2fr auto;
-      gap: 8px;
-      align-items: start;
-      padding: 6px 10px;
-      margin-bottom: 0;
-      border-radius: 0;
-      border-left: none;
-      border-right: none;
-      border-top: none;
-      background: transparent;
-      cursor: pointer;
-      transition: background-color 120ms ease;
-    }
-
-    .table-like .result-card:hover {
-      background: rgba(201, 107, 51, 0.08);
-    }
-
-    .table-like .result-card h3 {
-      font-size: 12px;
-      margin: 0;
-      font-weight: 700;
-    }
-
-    .table-like .pill-row {
-      display: contents;
-      margin: 0;
-    }
-
-    .table-like .pill {
-      border: none;
-      background: transparent;
-      padding: 0;
-      border-radius: 0;
-      font-size: 12px;
-      color: var(--text);
-    }
-
-    .table-like .meta {
-      display: contents;
-      margin: 0;
-      font-size: 12px;
-      color: var(--text);
-    }
-
-    .table-like .meta div {
-      display: block;
-    }
-
-    .table-like .result-actions {
-      justify-content: flex-end;
-      align-items: center;
-    }
-
-    .table-like .result-actions .btn-primary,
-    .table-like .result-actions .btn-secondary {
-      width: auto;
-      min-width: 92px;
-      padding: 6px 10px;
-      font-size: 11px;
-    }
-
-    .results-columns {
-      display: grid;
-      grid-template-columns: 1.3fr 0.9fr 0.8fr 0.9fr 1fr 1.2fr auto;
-      gap: 8px;
-      padding: 6px 10px;
-      border-bottom: 1px solid var(--line);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      background: rgba(226, 213, 193, .35);
-    }
-
-    .results-secondary {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    .results.collapsed {
-      max-height: 56px;
-    }
-
-    .results.collapsed .results-columns,
-    .results.collapsed .panel-inner {
-      display: none;
-    }
-
-    .outfitters-panel .panel-inner {
-      padding: 10px;
-    }
-
-    .sidebar .section-title:first-of-type {
-      margin-top: 0;
-    }
-
-    @media (max-width: 1200px) {
-      .app {
-        grid-template-columns: 300px 1fr;
-        grid-template-rows: 1fr auto auto;
-      }
-
-      .sidebar {
-        grid-column: 1;
-        grid-row: 1;
-      }
-
-      #map-wrap {
-        grid-column: 2;
-        grid-row: 1;
-        min-height: 60vh;
-      }
-
-      .results {
-        position: static;
-        grid-column: 1 / -1;
-        grid-row: 2;
-        border: none;
-        border-top: 1px solid var(--line);
-        border-radius: 0;
-        max-height: 42vh;
-      }
-
-      .outfitters-panel {
-        grid-column: 1 / -1;
-        grid-row: 3;
-        border-left: none;
-        border-top: 1px solid var(--line);
-      }
-    }
-
-    @media (max-width: 860px) {
-      .app {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 55vh auto auto;
-        height: auto;
-      }
-
-      .sidebar, .results, .outfitters-panel {
-        border: none;
-      }
-
-      #map-wrap {
-        position: relative;
-        height: 55vh;
-        min-height: 55vh;
-      }
-
-      .map-overlay {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-      }
-
-      .results {
-        position: static;
-        max-height: none;
-        border-top: 1px solid var(--line);
-        border-radius: 0;
-      }
-
-      .outfitters-panel {
-        border-top: 1px solid var(--line);
-      }
-
-      .results-columns,
-      .table-like .result-card,
-      .results-secondary {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="panel-inner">
-        <div class="brand">
-          <div class="brand-badge">UO</div>
-          <div>
-            <h1>U.O.G.A. Hunt Planner</h1>
-            <p>Vetted Outfitters</p>
-          </div>
-        </div>
-
-        <div class="section-title">Find a Hunt</div>
-        <div class="field-stack">
-          <div class="field">
-            <label for="searchInput">Select by hunt number</label>
-            <input id="searchInput" type="text" placeholder="Search hunt number, hunt name, or unit..." />
-          </div>
-
-          <div class="or-divider"><span>or</span></div>
-
-          <div class="field">
-            <label for="unitFilter">Select by hunt name or unit</label>
-            <select id="unitFilter" class="hunt-select"></select>
-          </div>
-
-          <div class="or-divider"><span>or</span></div>
-
-          <div class="field">
-            <label for="speciesFilter">Species</label>
-            <select id="speciesFilter" class="hunt-select"></select>
-          </div>
-
-          <div class="field">
-            <label for="sexFilter">Gender</label>
-            <select id="sexFilter" class="hunt-select">
-              <option value="All">All</option>
-              <option value="Buck">Buck</option>
-              <option value="Buck/Bull">Buck/Bull</option>
-              <option value="Antlerless">Antlerless</option>
-              <option value="Either">Either</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="huntTypeFilter">Hunt Type</label>
-            <select id="huntTypeFilter" class="hunt-select">
-              <option value="All">All</option>
-              <option value="General">General</option>
-              <option value="Limited Entry">Limited Entry</option>
-              <option value="Premium Limited Entry">Premium Limited Entry</option>
-              <option value="Management">Management</option>
-              <option value="Dedicated Hunter">Dedicated Hunter</option>
-              <option value="Cactus Buck">Cactus Buck</option>
-              <option value="Once-in-a-Lifetime">Once-in-a-Lifetime</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="weaponFilter">Weapon type (optional)</label>
-            <select id="weaponFilter" class="hunt-select">
-              <option value="All">All</option>
-              <option value="Archery">Archery</option>
-              <option value="Extended Archery">Extended Archery</option>
-              <option value="Restricted Archery">Restricted Archery</option>
-              <option value="Muzzleloader">Muzzleloader</option>
-              <option value="Restricted Muzzleloader">Restricted Muzzleloader</option>
-              <option value="Restricted Rifle">Restricted Rifle</option>
-              <option value="Any Legal Weapon">Any Legal Weapon</option>
-              <option value="HAMSS">HAMSS</option>
-              <option value="Multiseason">Multiseason</option>
-              <option value="Restricted Multiseason">Restricted Multiseason</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="basemapSelect">Change basemap</label>
-            <select id="basemapSelect" class="hunt-select">
-              <option value="osm">OpenStreetMap</option>
-              <option value="topo">Terrain</option>
-              <option value="sat">Satellite</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="section-title">Add Map Data Layers</div>
-        <div class="toggle-list">
-          <div class="toggle"><span>Live Utah Hunt Units</span><input id="toggleLiveUnits" type="checkbox" checked /></div>
-          <div class="toggle"><span>Hunt Unit Centers</span><input id="toggleUnits" type="checkbox" checked /></div>
-          <div class="toggle"><span>USFS Forests</span><input id="toggleUSFS" type="checkbox" checked /></div>
-          <div class="toggle"><span>BLM Districts</span><input id="toggleBLM" type="checkbox" checked /></div>
-          <div class="toggle"><span>SITLA</span><input id="toggleSITLA" type="checkbox" /></div>
-          <div class="toggle"><span>State Lands</span><input id="toggleState" type="checkbox" /></div>
-          <div class="toggle"><span>Private Lands</span><input id="togglePrivate" type="checkbox" /></div>
-        </div>
-
-        <div class="section-title">U.O.G.A. Layers</div>
-        <div class="toggle-list">
-          <div class="toggle"><span>Vetted Outfitters</span><input id="toggleOutfitters" type="checkbox" checked /></div>
-          <div class="toggle"><span>Certified Professional Outfitters</span><input id="toggleCPO" type="checkbox" checked /></div>
-          <div class="toggle"><span>Certified Professional Guides</span><input id="toggleCPG" type="checkbox" checked /></div>
-        </div>
-
-        <div class="actions">
-          <button id="openBoundaryBtn" class="btn-primary">Open Official Boundary</button>
-          <button id="resetBtn" class="btn-secondary">Reset Planner</button>
-        </div>
-
-        <div class="small-note">
-          Live now: Utah hunt-unit polygons, USFS forests, BLM districts, Utah ownership overlays, and vetted outfitter layer. Hunt records should load from your JSON file in the data folder through app.js.
-        </div>
-      </div>
-    </aside>
-
-    <main id="map-wrap">
-      <div id="map"></div>
-      <div class="map-overlay">
-        <div class="overlay-card map-brand">
-          <img
-            src="https://static.wixstatic.com/media/43f827_24f00cd070494533955d4910eef3a2fb~mv2.jpg/v1/fill/w_207,h_105,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Group%20945%20(1).jpg"
-            alt="U.O.G.A. logo"
-          />
-          <div>
-            <h2>U.O.G.A. Hunt Planner</h2>
-            <p>Vetted Outfitters</p>
-          </div>
-        </div>
-
-        <div class="overlay-card">
-          <h2 id="selectedTitle">No hunt selected</h2>
-          <p id="selectedMeta">Choose filters or click a hunt unit to load hunt and outfitter results.</p>
-        </div>
-      </div>
-
-      <aside class="results">
-        <div class="results-heading">
-          <h3>Matching Hunts</h3>
-          <div class="results-heading-actions">
-            <span id="huntCount" class="count-chip">0</span>
-            <button id="toggleResultsTray" type="button" class="tray-toggle" aria-label="Collapse hunt table">˅</button>
-          </div>
-        </div>
-
-        <div class="results-columns">
-          <span>Hunt Name</span>
-          <span>Hunt Number</span>
-          <span>Gender</span>
-          <span>Species</span>
-          <span>Weapon</span>
-          <span>Hunt Type / Dates</span>
-          <span>Action</span>
-        </div>
-
-        <div class="panel-inner">
-          <div id="huntResults" class="empty table-like" style="margin-bottom:12px;">No hunt data loaded yet.</div>
-
-          <div class="results-secondary">
-            <div>
-              <div class="section-title">Selected Area</div>
-              <div id="areaInfo" class="empty" style="margin-bottom:12px;">Click a hunt unit or select one from the filter.</div>
-            </div>
-
-            <div>
-              <div class="section-title">Map Click Info</div>
-              <div id="clickInfo" class="empty" style="margin-bottom:12px;">Click the map to inspect the selected area.</div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </main>
-
-    <aside class="outfitters-panel">
-      <div class="panel-inner">
-        <div class="section-title">Vetted Outfitters</div>
-        <div id="results"></div>
-      </div>
-    </aside>
-  </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
-Commit that, then say go and I’ll send the full new [app.js](C:\DOWNLOADS\test website\app.js).
-
-
-GO
-
-
-Replace your entire [app.js](C:\DOWNLOADS\test website\app.js) with this:
-
 // -----------------------------
 // UOGA Hunt Planner - Stable Baseline
 // -----------------------------
@@ -1095,6 +248,20 @@ function matchesFilter(selected, value) {
 
 const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
 
+function getHuntBoundaryStyle() {
+  const zoom = map.getZoom();
+
+  if (zoom <= 6) {
+    return { color: '#3653b3', weight: 1.2, fillColor: '#d6def7', fillOpacity: 0.18 };
+  }
+
+  if (zoom <= 8) {
+    return { color: '#3653b3', weight: 2, fillColor: '#d6def7', fillOpacity: 0.28 };
+  }
+
+  return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
+}
+
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -1129,6 +296,7 @@ let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
 let liveLayerSource = 'none';
 let huntResultsLimit = 100;
+let liveFilterToken = 0;
 let boundaryZoomToken = 0;
 
 async function loadHuntData() {
@@ -1257,7 +425,7 @@ function buildLiveHuntUnitsLayer() {
   const fallback = () => {
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
-      style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
+      style: () => getHuntBoundaryStyle()
     });
     liveLayerSource = 'fallback';
     liveHuntUnitsLayer.on('error', err => {
@@ -1269,7 +437,7 @@ function buildLiveHuntUnitsLayer() {
   try {
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: `${DWR_MAPSERVER}/0`,
-      style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
+      style: () => getHuntBoundaryStyle()
     });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
@@ -1480,8 +648,36 @@ function buildBoundaryFilterSql(names, ids) {
 }
 
 async function refreshLiveBoundaryFilter() {
+  const token = ++liveFilterToken;
+
   if (!liveHuntUnitsLayer) return;
-  applyLiveBoundaryWhere('1=1');
+
+  if (!selectedHunt) {
+    applyLiveBoundaryWhere('1=1');
+    return;
+  }
+
+  try {
+    const huntCode = getHuntCode(selectedHunt);
+    if (!huntCode) {
+      applyLiveBoundaryWhere('1=1');
+      return;
+    }
+
+    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
+    if (token !== liveFilterToken) return;
+
+    const where = buildBoundaryFilterSql(names, ids);
+    if (!where || where === '1=0') {
+      applyLiveBoundaryWhere('1=1');
+      return;
+    }
+
+    applyLiveBoundaryWhere(where);
+  } catch (err) {
+    console.error('Boundary filter failed:', err);
+    applyLiveBoundaryWhere('1=1');
+  }
 }
 
 function renderOwnershipPlaceholders() {
@@ -1490,37 +686,17 @@ function renderOwnershipPlaceholders() {
   privateLayer.clearLayers();
 
   if (toggleSITLA?.checked) {
-    L.circleMarker([39.05, -111.9], {
-      radius: 7,
-      color: '#4f9d62',
-      fillColor: '#4f9d62',
-      fillOpacity: 0.35,
-      weight: 2
-    })
+    L.circleMarker([39.05, -111.9], { radius: 7, color: '#4f9d62', fillColor: '#4f9d62', fillOpacity: 0.35, weight: 2 })
       .addTo(sitlaLayer)
       .bindPopup('<b>SITLA</b><br>Placeholder layer');
   }
-
   if (toggleState?.checked) {
-    L.circleMarker([40.1, -111.9], {
-      radius: 7,
-      color: '#2b8f9a',
-      fillColor: '#2b8f9a',
-      fillOpacity: 0.35,
-      weight: 2
-    })
+    L.circleMarker([40.1, -111.9], { radius: 7, color: '#2b8f9a', fillColor: '#2b8f9a', fillOpacity: 0.35, weight: 2 })
       .addTo(stateLayer)
       .bindPopup('<b>State Lands</b><br>Placeholder layer');
   }
-
   if (togglePrivate?.checked) {
-    L.circleMarker([38.9, -111.2], {
-      radius: 7,
-      color: '#9a3e3e',
-      fillColor: '#9a3e3e',
-      fillOpacity: 0.35,
-      weight: 2
-    })
+    L.circleMarker([38.9, -111.2], { radius: 7, color: '#9a3e3e', fillColor: '#9a3e3e', fillOpacity: 0.35, weight: 2 })
       .addTo(privateLayer)
       .bindPopup('<b>Private Lands</b><br>Placeholder layer');
   }
@@ -1566,10 +742,7 @@ function renderUnitCenters() {
       if (!units.has(value)) units.set(value, label);
     });
 
-    const list = Array.from(units.entries())
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .slice(0, 60);
-
+    const list = Array.from(units.entries()).sort((a, b) => a[1].localeCompare(b[1])).slice(0, 60);
     const html = list.map(([value, label]) => `
       <div style="margin-bottom:8px;">
         <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(value)}">${escapeHtml(label)}</button>
@@ -1924,6 +1097,12 @@ document.addEventListener('click', e => {
 map.on('click', e => {
   if (!clickInfoEl) return;
   clickInfoEl.innerHTML = `<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+});
+
+map.on('zoomend', () => {
+  if (liveHuntUnitsLayer && typeof liveHuntUnitsLayer.setStyle === 'function') {
+    liveHuntUnitsLayer.setStyle(() => getHuntBoundaryStyle());
+  }
 });
 
 (async function init() {
