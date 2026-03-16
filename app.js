@@ -56,6 +56,8 @@ const resultsEl = document.getElementById('results');
 const areaInfoEl = document.getElementById('areaInfo');
 const clickInfoEl = document.getElementById('clickInfo');
 const huntCountEl = document.getElementById('huntCount');
+const resultsTrayEl = document.querySelector('.results');
+const toggleResultsTrayBtn = document.getElementById('toggleResultsTray');
 
 function safe(v) {
   return String(v ?? '');
@@ -98,6 +100,15 @@ function formatPhone(phone) {
   const d = safe(phone).replace(/\D/g, '');
   if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   return safe(phone);
+}
+
+function createDiamondIcon() {
+  return L.divIcon({
+    className: 'hunt-center-icon',
+    html: '<div style="width:14px;height:14px;background:#e5522b;border:3px solid #ffd84d;transform:rotate(45deg);box-sizing:border-box;"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  });
 }
 
 function getHuntCode(h) {
@@ -161,6 +172,17 @@ function getHuntLng(h) {
   return Number.isFinite(n) ? n : null;
 }
 
+function isLikelyUtahCoordinate(lat, lng) {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= 36.5 &&
+    lat <= 42.5 &&
+    lng >= -114.5 &&
+    lng <= -108.5
+  );
+}
+
 function matchesFilter(selected, value) {
   const s = safe(selected).trim().toLowerCase();
   const v = safe(value).trim().toLowerCase();
@@ -178,10 +200,16 @@ const basemaps = {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap'
   }),
-  topo: L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
-  ),
+  topo: L.layerGroup([
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 13, attribution: 'Tiles &copy; Esri' }
+    ),
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, attribution: 'Labels &copy; Esri' }
+    )
+  ]),
   sat: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
@@ -202,6 +230,7 @@ let blmDistrictLayer = null;
 let liveLayerSource = 'none';
 let huntResultsLimit = 100;
 let liveFilterToken = 0;
+let boundaryZoomToken = 0;
 
 async function loadHuntData() {
   const res = await fetch('./data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json', { cache: 'no-store' });
@@ -329,20 +358,18 @@ function buildLiveHuntUnitsLayer() {
   const fallback = () => {
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
-      style: () => ({ color: '#243a8f', weight: 3, fillColor: '#6f88c4', fillOpacity: 0.28 })
+      style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
     });
     liveLayerSource = 'fallback';
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
   };
 
   try {
-    // Use FeatureLayer so we can control line weight and fill directly.
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: `${DWR_MAPSERVER}/0`,
-      style: () => ({ color: '#243a8f', weight: 3, fillColor: '#6f88c4', fillOpacity: 0.28 })
+      style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
     });
     liveLayerSource = 'dwr-feature';
-
     liveHuntUnitsLayer.on('error', () => fallback());
 
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
@@ -359,7 +386,8 @@ function buildUSFSLayer() {
 
   usfsDistrictLayer = L.esri.featureLayer({
     url: 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_RangerDistricts_01/MapServer/1',
-    style: () => ({ color: '#3f6fa8', weight: 2, fillOpacity: 0.02 })
+    where: "FORESTNAME IN ('Ashley National Forest','Dixie National Forest','Fishlake National Forest','Manti-La Sal National Forest','Uinta-Wasatch-Cache National Forest')",
+    style: () => ({ color: '#476f2d', weight: 2.3, fillOpacity: 0.01 })
   });
 
   usfsDistrictLayer.bindPopup(layer => {
@@ -378,7 +406,7 @@ function buildBLMLayer() {
 
   blmDistrictLayer = L.esri.featureLayer({
     url: 'https://gis.blm.gov/utarcgis/rest/services/AdminBoundaries/BLM_UT_ADMU/FeatureServer/0',
-    style: () => ({ color: '#7c5ea7', weight: 2, fillOpacity: 0.02 })
+    style: () => ({ color: '#b9722f', weight: 2.3, fillOpacity: 0.02 })
   });
 
   blmDistrictLayer.bindPopup(layer => {
@@ -432,6 +460,48 @@ async function queryBoundaryNamesAndIds(huntCodes) {
   }
 
   return { names, ids };
+}
+
+async function zoomToSelectedBoundary() {
+  const token = ++boundaryZoomToken;
+
+  if (!selectedHunt || !liveHuntUnitsLayer || typeof liveHuntUnitsLayer.query !== 'function') {
+    return;
+  }
+
+  try {
+    const huntCode = getHuntCode(selectedHunt);
+    if (!huntCode) return;
+
+    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
+    if (token !== boundaryZoomToken) return;
+
+    const where = buildBoundaryFilterSql(names, ids);
+    if (!where || where === '1=0') return;
+
+    const featureCollection = await new Promise((resolve, reject) => {
+      liveHuntUnitsLayer.query().where(where).run((error, fc) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(fc);
+      });
+    });
+
+    if (token !== boundaryZoomToken) return;
+
+    const features = Array.isArray(featureCollection?.features) ? featureCollection.features : [];
+    if (!features.length) return;
+
+    const layer = L.geoJSON(featureCollection);
+    const bounds = layer.getBounds();
+    if (bounds && bounds.isValid()) {
+      map.fitBounds(bounds.pad(0.08));
+    }
+  } catch (err) {
+    console.error('Boundary zoom failed:', err);
+  }
 }
 
 function buildBoundaryFilterSql(names, ids) {
@@ -518,12 +588,8 @@ function renderUnitCenters() {
     const lng = getHuntLng(h);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-    const marker = L.circleMarker([lat, lng], {
-      radius: 6,
-      color: '#8b5f2b',
-      weight: 2,
-      fillColor: '#c68945',
-      fillOpacity: 0.8
+    const marker = L.marker([lat, lng], {
+      icon: createDiamondIcon()
     }).addTo(unitCenterLayer);
 
     marker.bindPopup(`
@@ -575,23 +641,16 @@ function renderHuntResults() {
   const html = filtered.slice(0, shown).map(h => {
     const code = getHuntCode(h);
     const title = getHuntTitle(h) || getUnitName(h) || code || 'Untitled Hunt';
-    const unit = getUnitName(h) || 'Unknown Unit';
     const isSelected = selectedHunt && getHuntCode(selectedHunt) === code;
 
     return `
       <div class="result-card ${isSelected ? 'selected' : ''}">
         <h3>${escapeHtml(title)}</h3>
-        <div class="pill-row">
-          <span class="pill">${escapeHtml(getSpeciesRaw(h) || 'Species N/A')}</span>
-          <span class="pill">${escapeHtml(getSex(h) || 'Sex N/A')}</span>
-          <span class="pill">${escapeHtml(getWeapon(h) || 'Weapon N/A')}</span>
-          <span class="pill">${escapeHtml(getHuntType(h) || 'Type N/A')}</span>
-        </div>
-        <div class="meta">
-          <div><strong>Unit:</strong> ${escapeHtml(unit)}</div>
-          <div><strong>Hunt Code:</strong> ${escapeHtml(code)}</div>
-          <div><strong>Dates:</strong> ${escapeHtml(getDates(h))}</div>
-        </div>
+        <div>${escapeHtml(code)}</div>
+        <div>${escapeHtml(getSex(h) || 'N/A')}</div>
+        <div>${escapeHtml(getSpeciesRaw(h) || 'N/A')}</div>
+        <div>${escapeHtml(getWeapon(h) || 'N/A')}</div>
+        <div>${escapeHtml(getHuntType(h) || 'N/A')}<br><span style="color:var(--muted);">${escapeHtml(getDates(h))}</span></div>
         <div class="result-actions">
           <button type="button" class="btn-primary" data-action="select-hunt" data-hunt-code="${escapeHtml(code)}">Select Hunt</button>
         </div>
@@ -698,7 +757,8 @@ function selectUnitByValue(unitValue) {
 
   const lat = getHuntLat(hunt);
   const lng = getHuntLng(hunt);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) map.setView([lat, lng], 8);
+  if (isLikelyUtahCoordinate(lat, lng)) map.setView([lat, lng], 8);
+  else zoomToSelectedBoundary();
 
   renderAreaInfo();
   renderOutfitters();
@@ -720,7 +780,8 @@ function selectHuntByCode(huntCode) {
 
   const lat = getHuntLat(hunt);
   const lng = getHuntLng(hunt);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) map.setView([lat, lng], 8);
+  if (isLikelyUtahCoordinate(lat, lng)) map.setView([lat, lng], 8);
+  else zoomToSelectedBoundary();
 
   renderAreaInfo();
   renderOutfitters();
@@ -858,10 +919,30 @@ if (openBoundaryBtn) {
 
 if (resetBtn) resetBtn.addEventListener('click', resetPlanner);
 
+if (toggleResultsTrayBtn && resultsTrayEl) {
+  toggleResultsTrayBtn.addEventListener('click', () => {
+    resultsTrayEl.classList.toggle('collapsed');
+    toggleResultsTrayBtn.textContent = resultsTrayEl.classList.contains('collapsed') ? '˄' : '˅';
+  });
+}
+
 if (huntResultsEl) {
   huntResultsEl.addEventListener('click', e => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
+
+    const row = target.closest('.result-card');
+    if (row && row instanceof HTMLElement) {
+      const rowBtn = row.querySelector('button[data-action="select-hunt"]');
+      if (rowBtn instanceof HTMLElement && !target.closest('button')) {
+        const rowHuntCode = safe(rowBtn.getAttribute('data-hunt-code')).trim();
+        if (rowHuntCode) {
+          selectHuntByCode(rowHuntCode);
+          return;
+        }
+      }
+    }
+
     const btn = target.closest('button[data-action]');
     if (!btn) return;
 
@@ -931,4 +1012,3 @@ map.on('click', e => {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
     }
   }
-})();
