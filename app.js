@@ -26,6 +26,25 @@ const outfitters = [
 const DWR_MAPSERVER = 'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer';
 const DWR_HUNT_TABLE = `${DWR_MAPSERVER}/1`;
 
+const UNIT_CENTER_LOOKUP = {
+  'beaver-east': [38.28, -112.48],
+  'book-cliffs': [39.72, -109.35],
+  cache: [41.78, -111.62],
+  'chalk-creek-east': [40.88, -111.07],
+  'diamond-mountain': [40.42, -109.18],
+  'fillmore-oak-creek': [38.95, -112.33],
+  fishlake: [38.62, -111.78],
+  monroe: [38.47, -112.05],
+  'manti-san-rafael': [39.12, -111.12],
+  nebo: [39.88, -111.74],
+  'pine-valley': [37.45, -113.44],
+  'plateau-boulder-kaiparowits': [37.88, -111.42],
+  'plateau-thousand-lakes': [38.17, -111.36],
+  'south-slope-bonanza': [40.16, -110.22],
+  'south-slope-vernal': [40.46, -109.56],
+  'west-desert-south': [38.78, -113.42]
+};
+
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
 const sexFilter = document.getElementById('sexFilter');
@@ -172,6 +191,40 @@ function getHuntLng(h) {
   return Number.isFinite(n) ? n : null;
 }
 
+function getTrustedUnitCenter(h) {
+  const candidates = [
+    slugify(getUnitCode(h)),
+    slugify(getUnitName(h)),
+    slugify(getUnitValue(h))
+  ].filter(Boolean);
+
+  for (const key of candidates) {
+    if (UNIT_CENTER_LOOKUP[key]) {
+      return UNIT_CENTER_LOOKUP[key];
+    }
+  }
+
+  return null;
+}
+
+function zoomToHuntSelection(hunt) {
+  const lat = getHuntLat(hunt);
+  const lng = getHuntLng(hunt);
+
+  if (isLikelyUtahCoordinate(lat, lng)) {
+    map.setView([lat, lng], 8);
+    return;
+  }
+
+  const trustedCenter = getTrustedUnitCenter(hunt);
+  if (trustedCenter) {
+    map.setView(trustedCenter, 8);
+    return;
+  }
+
+  zoomToSelectedBoundary();
+}
+
 function isLikelyUtahCoordinate(lat, lng) {
   return (
     Number.isFinite(lat) &&
@@ -216,7 +269,7 @@ const basemaps = {
   )
 };
 
-basemaps.topo.addTo(map);
+basemaps.osm.addTo(map);
 
 const unitCenterLayer = L.layerGroup().addTo(map);
 const outfitterLayer = L.layerGroup().addTo(map);
@@ -361,6 +414,9 @@ function buildLiveHuntUnitsLayer() {
       style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
     });
     liveLayerSource = 'fallback';
+    liveHuntUnitsLayer.on('error', err => {
+      console.error('Fallback hunt layer failed:', err);
+    });
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
   };
 
@@ -370,10 +426,15 @@ function buildLiveHuntUnitsLayer() {
       style: () => ({ color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 })
     });
     liveLayerSource = 'dwr-feature';
-    liveHuntUnitsLayer.on('error', () => fallback());
+    liveHuntUnitsLayer.on('error', err => {
+      console.error('DWR hunt layer failed:', err);
+      try { map.removeLayer(liveHuntUnitsLayer); } catch (e) {}
+      fallback();
+    });
 
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
   } catch (e) {
+    console.error('DWR hunt layer setup failed:', e);
     fallback();
   }
 }
@@ -557,7 +618,12 @@ function buildBoundaryFilterSql(names, ids) {
 async function refreshLiveBoundaryFilter() {
   const token = ++liveFilterToken;
 
-  if (!liveHuntUnitsLayer || liveLayerSource !== 'dwr-feature') return;
+  if (!liveHuntUnitsLayer) return;
+
+  if (liveLayerSource !== 'dwr-feature') {
+    applyLiveBoundaryWhere('1=1');
+    return;
+  }
 
   const codes = selectedHunt
     ? [getHuntCode(selectedHunt)].filter(Boolean)
@@ -785,10 +851,7 @@ function selectUnitByValue(unitValue) {
   if (selectedTitle) selectedTitle.textContent = getUnitName(hunt) || unitValue;
   if (selectedMeta) selectedMeta.textContent = [getSpeciesRaw(hunt), getRegion(hunt)].filter(Boolean).join(' • ');
 
-  const lat = getHuntLat(hunt);
-  const lng = getHuntLng(hunt);
-  if (isLikelyUtahCoordinate(lat, lng)) map.setView([lat, lng], 8);
-  else zoomToSelectedBoundary();
+  zoomToHuntSelection(hunt);
 
   renderAreaInfo();
   renderOutfitters();
@@ -808,10 +871,7 @@ function selectHuntByCode(huntCode) {
   if (selectedTitle) selectedTitle.textContent = getHuntTitle(hunt) || getUnitName(hunt) || huntCode;
   if (selectedMeta) selectedMeta.textContent = [getSpeciesRaw(hunt), getRegion(hunt)].filter(Boolean).join(' • ');
 
-  const lat = getHuntLat(hunt);
-  const lng = getHuntLng(hunt);
-  if (isLikelyUtahCoordinate(lat, lng)) map.setView([lat, lng], 8);
-  else zoomToSelectedBoundary();
+  zoomToHuntSelection(hunt);
 
   renderAreaInfo();
   renderOutfitters();
@@ -884,7 +944,7 @@ if (unitFilter) {
 }
 
 if (basemapSelect) {
-  basemapSelect.value = 'topo';
+  basemapSelect.value = 'osm';
   basemapSelect.addEventListener('change', () => {
     Object.values(basemaps).forEach(layer => {
       if (map.hasLayer(layer)) map.removeLayer(layer);
@@ -1026,6 +1086,7 @@ map.on('click', e => {
     renderOutfitters();
     renderOutfitterResults();
     renderHuntResults();
+    window.setTimeout(() => map.invalidateSize(), 0);
   } catch (err) {
     console.error('Init failed:', err);
 
@@ -1041,5 +1102,6 @@ map.on('click', e => {
     if (areaInfoEl) {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
     }
+    window.setTimeout(() => map.invalidateSize(), 0);
   }
 })();
