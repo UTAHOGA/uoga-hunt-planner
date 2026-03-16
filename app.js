@@ -178,17 +178,17 @@ const basemaps = {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap'
   }),
-  topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    maxZoom: 17,
-    attribution: '&copy; OpenTopoMap'
-  }),
+  topo: L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+  ),
   sat: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
   )
 };
 
-basemaps.osm.addTo(map);
+basemaps.topo.addTo(map);
 
 const unitCenterLayer = L.layerGroup().addTo(map);
 const outfitterLayer = L.layerGroup().addTo(map);
@@ -329,19 +329,19 @@ function buildLiveHuntUnitsLayer() {
   const fallback = () => {
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
-      style: () => ({ color: '#8b5f2b', weight: 1.5, fillColor: '#d7c4a3', fillOpacity: 0.18 })
+      style: () => ({ color: '#243a8f', weight: 3, fillColor: '#6f88c4', fillOpacity: 0.28 })
     });
     liveLayerSource = 'fallback';
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
   };
 
   try {
-    liveHuntUnitsLayer = L.esri.dynamicMapLayer({
-      url: DWR_MAPSERVER,
-      layers: [0],
-      opacity: 0.9
+    // Use FeatureLayer so we can control line weight and fill directly.
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: `${DWR_MAPSERVER}/0`,
+      style: () => ({ color: '#243a8f', weight: 3, fillColor: '#6f88c4', fillOpacity: 0.28 })
     });
-    liveLayerSource = 'dwr';
+    liveLayerSource = 'dwr-feature';
 
     liveHuntUnitsLayer.on('error', () => fallback());
 
@@ -392,9 +392,8 @@ function buildBLMLayer() {
 function applyLiveBoundaryWhere(whereClause) {
   if (!liveHuntUnitsLayer) return;
 
-  if (liveLayerSource === 'dwr' && typeof liveHuntUnitsLayer.setLayerDefs === 'function') {
-    liveHuntUnitsLayer.setLayerDefs({ 0: whereClause || 'Status = 1' });
-    if (typeof liveHuntUnitsLayer.redraw === 'function') liveHuntUnitsLayer.redraw();
+  if (liveLayerSource === 'dwr-feature' && typeof liveHuntUnitsLayer.setWhere === 'function') {
+    liveHuntUnitsLayer.setWhere(whereClause || 'Status = 1');
     return;
   }
 
@@ -458,7 +457,7 @@ function buildBoundaryFilterSql(names, ids) {
 async function refreshLiveBoundaryFilter() {
   const token = ++liveFilterToken;
 
-  if (!liveHuntUnitsLayer || liveLayerSource !== 'dwr') return;
+  if (!liveHuntUnitsLayer || liveLayerSource !== 'dwr-feature') return;
 
   const codes = selectedHunt
     ? [getHuntCode(selectedHunt)].filter(Boolean)
@@ -794,6 +793,7 @@ if (unitFilter) {
 }
 
 if (basemapSelect) {
+  basemapSelect.value = 'topo';
   basemapSelect.addEventListener('change', () => {
     Object.values(basemaps).forEach(layer => {
       if (map.hasLayer(layer)) map.removeLayer(layer);
