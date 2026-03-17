@@ -195,25 +195,13 @@ function getFieldPreview(properties, preferredKeys = []) {
     .join(' | ');
 }
 
-function buildLandSignPopup(agency, title, subtitle = '') {
+function buildLandSignPopup(agency, title, subtitle = '', logoUrl = '') {
   return `
     <div class="land-sign-popup">
+      ${logoUrl ? `<img class="sign-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(`${agency} logo`)}" />` : ''}
       <div class="sign-agency">${escapeHtml(agency)}</div>
       <div class="sign-title">${escapeHtml(title)}</div>
       ${subtitle ? `<div class="sign-subtitle">${escapeHtml(subtitle)}</div>` : ''}
-    </div>
-  `;
-}
-
-function buildLandLogoPopup(kind, title, subtitle) {
-  const logoUrl = kind === 'usfs' ? USFS_LOGO_URL : BLM_LOGO_URL;
-  const subtitleText = kind === 'usfs' ? 'National Forest' : 'Public Lands';
-
-  return `
-    <div class="land-logo-popup">
-      <img class="agency-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(kind === 'usfs' ? 'US Forest Service logo' : 'Bureau of Land Management logo')}" />
-      <div class="agency-title">${escapeHtml(title)}</div>
-      <div class="agency-subtitle">${escapeHtml(subtitle || subtitleText)}</div>
     </div>
   `;
 }
@@ -706,7 +694,7 @@ function buildUSFSLayer() {
     const p = layer.feature?.properties || {};
     const forest = getUsfsLabel(p);
     const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    return buildLandLogoPopup('usfs', forest, office);
+    return buildLandSignPopup('US Forest Service', forest, office, USFS_LOGO_URL);
   }, { className: 'usfs-sign-popup' });
 
   usfsDistrictLayer.on('click', evt => {
@@ -714,7 +702,7 @@ function buildUSFSLayer() {
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
     const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    evt.layer.bindPopup(buildLandLogoPopup('usfs', forest, office), {
+    evt.layer.bindPopup(buildLandSignPopup('US Forest Service', forest, office, USFS_LOGO_URL), {
       className: 'usfs-sign-popup'
     }).openPopup();
     if (clickInfoEl) {
@@ -740,7 +728,7 @@ function buildBLMLayer() {
 
   blmDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
-    return buildLandLogoPopup('blm', getBlmLabel(p), 'Utah District');
+    return buildLandSignPopup('Bureau of Land Management', getBlmLabel(p), 'Utah District', BLM_LOGO_URL);
   }, { className: 'blm-sign-popup' });
 
   blmDistrictLayer.on('click', evt => {
@@ -748,7 +736,7 @@ function buildBLMLayer() {
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
-    evt.layer.bindPopup(buildLandLogoPopup('blm', unit, 'Utah District'), {
+    evt.layer.bindPopup(buildLandSignPopup('Bureau of Land Management', unit, 'Utah District', BLM_LOGO_URL), {
       className: 'blm-sign-popup'
     }).openPopup();
     if (clickInfoEl) {
