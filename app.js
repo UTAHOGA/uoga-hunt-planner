@@ -693,16 +693,14 @@ function buildUSFSLayer() {
   usfsDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
     const forest = getUsfsLabel(p);
-    const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    return buildLandSignPopup('US Forest Service', forest, office, USFS_LOGO_URL);
+    return buildLandSignPopup('US Forest Service', forest, '', USFS_LOGO_URL);
   }, { className: 'usfs-sign-popup' });
 
   usfsDistrictLayer.on('click', evt => {
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
-    const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    evt.layer.bindPopup(buildLandSignPopup('US Forest Service', forest, office, USFS_LOGO_URL), {
+    evt.layer.bindPopup(buildLandSignPopup('US Forest Service', forest, '', USFS_LOGO_URL), {
       className: 'usfs-sign-popup'
     }).openPopup();
     if (clickInfoEl) {
