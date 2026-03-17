@@ -614,32 +614,25 @@ async function renderSelectedBoundaryOnly(whereClause) {
 
   if (!whereClause || whereClause === '1=0') return;
 
-  const url =
-    `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-    `where=${encodeURIComponent(whereClause)}` +
-    '&outFields=*' +
-    '&returnGeometry=true' +
-    '&outSR=4326' +
-    '&f=geojson';
+  if (!window.L || !window.L.esri) return;
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Selected boundary query failed: ${response.status}`);
-  }
-
-  const geojson = await response.json();
-  const features = Array.isArray(geojson?.features) ? geojson.features : [];
-  if (!features.length) return;
-
-  selectedBoundaryLayer = L.geoJSON(geojson, {
+  selectedBoundaryLayer = L.esri.featureLayer({
+    url: DWR_HUNT_BOUNDARY_LAYER,
     pane: 'selectedHuntPane',
+    where: whereClause,
     style: () => ({
       color: '#1d3f91',
       weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
       fillColor: '#9cb4f2',
       fillOpacity: 0.18
     })
-  }).addTo(map);
+  });
+
+  selectedBoundaryLayer.on('error', err => {
+    console.error('Selected boundary layer failed:', err);
+  });
+
+  selectedBoundaryLayer.addTo(map);
 }
 
 function chunk(items, size) {
