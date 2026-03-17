@@ -30,8 +30,8 @@ const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
 const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
-const USFS_LOGO_URL = 'https://static.wixstatic.com/media/43f827_5f1586f9c5b54340a1f8e50ec128188d~mv2.png';
-const BLM_LOGO_URL = 'https://static.wixstatic.com/media/43f827_1196898fae2d45f688582bcb399ff1bf~mv2.png';
+const USFS_LOGO_URL = 'https://static.wixstatic.com/media/43f827_d54826fa897541e6810ba74cc2fcf9d7~mv2.png';
+const BLM_LOGO_URL = 'https://static.wixstatic.com/media/43f827_09ff64b7e1a34f88816d85f3384b2b40~mv2.png';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -198,10 +198,10 @@ function getFieldPreview(properties, preferredKeys = []) {
 function buildLandSignPopup(agency, title, subtitle = '', logoUrl = '') {
   return `
     <div class="land-sign-popup">
-      ${logoUrl ? `<img class="sign-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(`${agency} logo`)}" />` : ''}
-      <div class="sign-agency">${escapeHtml(agency)}</div>
-      <div class="sign-title">${escapeHtml(title)}</div>
-      ${subtitle ? `<div class="sign-subtitle">${escapeHtml(subtitle)}</div>` : ''}
+      <div class="sign-board" style="background-image:url('${escapeHtml(logoUrl)}')">
+        <div class="sign-label">${escapeHtml(title)}</div>
+        ${subtitle ? `<div class="sign-subtitle">${escapeHtml(subtitle)}</div>` : ''}
+      </div>
     </div>
   `;
 }
