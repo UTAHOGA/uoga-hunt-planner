@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "description": "Utah 2026 provisional spike-only elk hunt opportunities dataset based on the 2025 field regulations guidebook.",
+    "status": "spike_elk_master",
+    "species": "Elk",
+    "year": 2026,
+    "pagesIncluded": [
+      42,
+      43,
+      44
+    ],
+    "recordCount": 5,
+    "source": "https://wildlife.utah.gov/guidebooks/field_regs.pdf",
+    "provisionalSourceYear": 2025
+  },
+  "records": [
+    {
+      "huntCode": "ES3001",
+      "year": 2026,
+      "title": "General-season spike bull elk - archery",
+      "species": "Elk",
+      "sex": "Bull",
+      "weapon": "Archery",
+      "huntType": "General",
+      "unitName": "General-season spike bull elk units",
+      "unitCode": "general-season-spike-bull-elk-units",
+      "region": "Utah",
+      "seasonLabel": "Aug. 16-Sept. 5 (Paunsaugunt closed to general archery; Book Cliffs spike bull only)",
+      "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=ES3001",
+      "sourceGuide": "2025 Utah Big Game Field Regulations Guidebook (used provisionally for 2026 until updated field regs are published)",
+      "sourcePage": 42
+    },
+    {
+      "huntCode": "ES3002",
+      "year": 2026,
+      "title": "General-season spike bull elk - any legal weapon",
+      "species": "Elk",
+      "sex": "Bull",
+      "weapon": "Any Legal Weapon",
+      "huntType": "General",
+      "unitName": "General-season spike bull elk units",
+      "unitCode": "general-season-spike-bull-elk-units",
+      "region": "Utah",
+      "seasonLabel": "Oct. 4-Oct. 16",
+      "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=ES3002",
+      "sourceGuide": "2025 Utah Big Game Field Regulations Guidebook (used provisionally for 2026 until updated field regs are published)",
+      "sourcePage": 43
+    },
+    {
+      "huntCode": "ES3003",
+      "year": 2026,
+      "title": "General-season spike bull elk - muzzleloader",
+      "species": "Elk",
+      "sex": "Bull",
+      "weapon": "Muzzleloader",
+      "huntType": "General",
+      "unitName": "General-season spike bull elk units",
+      "unitCode": "general-season-spike-bull-elk-units",
+      "region": "Utah",
+      "seasonLabel": "Oct. 29-Nov. 6",
+      "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=ES3003",
+      "sourceGuide": "2025 Utah Big Game Field Regulations Guidebook (used provisionally for 2026 until updated field regs are published)",
+      "sourcePage": 43
+    },
+    {
+      "huntCode": "ES3004",
+      "year": 2026,
+      "title": "Multiseason general spike bull elk",
+      "species": "Elk",
+      "sex": "Bull",
+      "weapon": "Multiseason",
+      "huntType": "General",
+      "unitName": "General-season spike bull elk units",
+      "unitCode": "general-season-spike-bull-elk-units",
+      "region": "Utah",
+      "seasonLabel": "Archery Aug. 16-Sept. 5; Any legal weapon Oct. 4-Oct. 16; Muzzleloader Oct. 29-Nov. 6",
+      "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=ES3004",
+      "sourceGuide": "2025 Utah Big Game Field Regulations Guidebook (used provisionally for 2026 until updated field regs are published)",
+      "sourcePage": 43
+    },
+    {
+      "huntCode": "ES3005",
+      "year": 2026,
+      "title": "General-season youth elk - spike units",
+      "species": "Elk",
+      "sex": "Bull",
+      "weapon": "Any Legal Weapon",
+      "huntType": "Youth",
+      "unitName": "General-season spike bull elk units",
+      "unitCode": "general-season-spike-bull-elk-units",
+      "region": "Utah",
+      "seasonLabel": "Valid during all general-season dates on spike units",
+      "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=ES3005",
+      "sourceGuide": "2025 Utah Big Game Field Regulations Guidebook (used provisionally for 2026 until updated field regs are published)",
+      "sourcePage": 44
+    }
+  ]
+}
