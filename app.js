@@ -277,7 +277,13 @@ function getSpeciesList(h) {
 }
 
 function getSex(h) {
-  return firstNonEmpty(h.sex, h.Sex, h.SEX);
+  const raw = firstNonEmpty(h.sex, h.Sex, h.SEX);
+  if (safe(raw).trim().toLowerCase() !== 'buck/bull') return raw;
+
+  const speciesList = getSpeciesList(h).map(s => s.toLowerCase());
+  if (speciesList.includes('elk')) return 'Bull';
+  if (speciesList.includes('mule deer') || speciesList.includes('deer')) return 'Buck';
+  return 'Buck/Bull';
 }
 
 function getWeapon(h) {
@@ -357,7 +363,6 @@ function matchesFilter(selected, value) {
   if (!s || s === 'all' || s === 'all species') return true;
   if (!v) return false;
   if (s === v) return true;
-  if (s === 'buck/bull' && (v === 'buck' || v === 'bull' || v === 'buck/bull')) return true;
   return v.includes(s) || s.includes(v);
 }
 
@@ -1319,7 +1324,13 @@ function selectUnitByValue(unitValue) {
 
   if (unitFilter) unitFilter.value = unitValue;
   if (selectedTitle) selectedTitle.textContent = getUnitName(hunt) || unitValue;
-  if (selectedMeta) selectedMeta.textContent = [getSpeciesRaw(hunt), getRegion(hunt)].filter(Boolean).join(' • ');
+  if (selectedMeta) {
+    selectedMeta.textContent = [
+      getSpeciesRaw(hunt),
+      getUnitName(hunt) || getUnitCode(hunt),
+      getRegion(hunt)
+    ].filter(Boolean).join(' • ');
+  }
 
   zoomToHuntSelection(hunt);
 
@@ -1340,7 +1351,13 @@ function selectHuntByCode(huntCode) {
 
   if (unitFilter) unitFilter.value = selectedUnit;
   if (selectedTitle) selectedTitle.textContent = getHuntTitle(hunt) || getUnitName(hunt) || huntCode;
-  if (selectedMeta) selectedMeta.textContent = [getSpeciesRaw(hunt), getRegion(hunt)].filter(Boolean).join(' • ');
+  if (selectedMeta) {
+    selectedMeta.textContent = [
+      getSpeciesRaw(hunt),
+      getUnitName(hunt) || getUnitCode(hunt),
+      getRegion(hunt)
+    ].filter(Boolean).join(' • ');
+  }
 
   zoomToHuntSelection(hunt);
 
