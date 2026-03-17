@@ -29,7 +29,7 @@ const DWR_MAPSERVER =
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
-const LOCAL_HUNT_BOUNDARIES_PATH = './data/hunt_boundaries_arcgis.json';
+const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -563,17 +563,6 @@ function getBoundarySourceFeatures() {
   return Array.isArray(huntBoundaryData?.features) ? huntBoundaryData.features : [];
 }
 
-function convertBoundaryFeatureToGeoJSON(feature) {
-  if (!window.L || !window.L.esri?.Util?.arcgisToGeoJSON) return null;
-
-  try {
-    return L.esri.Util.arcgisToGeoJSON(feature);
-  } catch (err) {
-    console.error('Boundary conversion failed:', err);
-    return null;
-  }
-}
-
 function renderLiveHuntUnitsFeatures(features) {
   if (!window.L) return;
 
@@ -586,12 +575,8 @@ function renderLiveHuntUnitsFeatures(features) {
     return;
   }
 
-  const geojsonFeatures = features
-    .map(convertBoundaryFeatureToGeoJSON)
-    .filter(Boolean);
-
   liveHuntUnitsLayer = L.geoJSON(
-    { type: 'FeatureCollection', features: geojsonFeatures },
+    { type: 'FeatureCollection', features },
     {
       pane: 'huntPane',
       style: () => getHuntBoundaryStyle()
