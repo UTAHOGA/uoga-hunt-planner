@@ -19,7 +19,6 @@
       --accent2: #d08d4f;
       --ok: #5f8f5a;
       --blue: #3653b3;
-      --purple: #8b4f7d;
       --green: #476f2d;
       --red: #b24b4b;
       --shadow: 0 8px 24px rgba(78, 57, 33, .12);
@@ -52,8 +51,6 @@
       border-right: 1px solid var(--line);
       background: linear-gradient(180deg, rgba(255,252,246,.97), rgba(245,236,220,.97));
     }
-
-    .results { border-left: none; }
 
     .outfitters-panel {
       border-left: 1px solid var(--line);
@@ -102,13 +99,6 @@
       font-size: 11px;
       font-weight: 700;
       letter-spacing: .02em;
-    }
-
-    .section-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
     }
 
     .count-chip {
@@ -213,8 +203,6 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
     }
 
-    .toggle input { transform: scale(1); }
-
     .actions {
       display: grid;
       gap: 6px;
@@ -266,8 +254,15 @@
       z-index: 700;
       pointer-events: none;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       gap: 12px;
+    }
+
+    .map-overlay-left {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 420px;
     }
 
     .overlay-card {
@@ -568,14 +563,6 @@
       display: none;
     }
 
-    .outfitters-panel .panel-inner {
-      padding: 10px;
-    }
-
-    .sidebar .section-title:first-of-type {
-      margin-top: 0;
-    }
-
     @media (max-width: 1200px) {
       .app {
         grid-template-columns: 300px 1fr;
@@ -769,21 +756,24 @@
 
     <main id="map-wrap">
       <div id="map"></div>
-      <div class="map-overlay">
-        <div class="overlay-card map-brand">
-          <img
-            src="https://static.wixstatic.com/media/43f827_24f00cd070494533955d4910eef3a2fb~mv2.jpg/v1/fill/w_207,h_105,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Group%20945%20(1).jpg"
-            alt="U.O.G.A. logo"
-          />
-          <div>
-            <h2>U.O.G.A. Hunt Planner</h2>
-            <p>Vetted Outfitters</p>
-          </div>
-        </div>
 
-        <div class="overlay-card">
-          <h2 id="selectedTitle">No hunt selected</h2>
-          <p id="selectedMeta">Choose filters or click a hunt unit to load hunt and outfitter results.</p>
+      <div class="map-overlay">
+        <div class="map-overlay-left">
+          <div class="overlay-card map-brand">
+            <img
+              src="https://static.wixstatic.com/media/43f827_24f00cd070494533955d4910eef3a2fb~mv2.jpg/v1/fill/w_207,h_105,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Group%20945%20(1).jpg"
+              alt="U.O.G.A. logo"
+            />
+            <div>
+              <h2>U.O.G.A. Hunt Planner</h2>
+              <p>Vetted Outfitters</p>
+            </div>
+          </div>
+
+          <div class="overlay-card">
+            <h2 id="selectedTitle">No hunt selected</h2>
+            <p id="selectedMeta">Choose filters or click a hunt unit to load hunt and outfitter results.</p>
+          </div>
         </div>
       </div>
 
