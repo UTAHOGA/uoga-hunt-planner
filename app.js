@@ -54,7 +54,6 @@ const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1506: ['Fillmore'],
   DB1536: ['Fillmore']
 };
-
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
 const sexFilter = document.getElementById('sexFilter');
