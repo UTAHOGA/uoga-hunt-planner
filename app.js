@@ -29,7 +29,7 @@ const DWR_HUNT_TABLE = `${DWR_MAPSERVER}/1`;
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
-  cache: [41.78, -111.62],
+  'cache': [41.78, -111.62],
   'chalk-creek-east': [40.88, -111.07],
   'diamond-mountain': [40.42, -109.18],
   'fillmore-oak-creek': [38.95, -112.33],
@@ -119,6 +119,21 @@ function formatPhone(phone) {
   const d = safe(phone).replace(/\D/g, '');
   if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   return safe(phone);
+}
+
+function getUsfsLabel(properties) {
+  const p = properties || {};
+  return firstNonEmpty(
+    p.FORESTNAME,
+    p.FORESTNAMECOMMON,
+    p.FORESTSHORTNAME,
+    p.UNIT_NAME,
+    p.UNITNAME,
+    p.ADMIN_NAME,
+    p.NAME,
+    p.LABEL,
+    'US Forest Service Unit'
+  );
 }
 
 function createDiamondIcon() {
@@ -246,17 +261,6 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
-
-map.createPane('blmPane');
-map.getPane('blmPane').style.zIndex = 410;
-map.createPane('usfsPane');
-map.getPane('usfsPane').style.zIndex = 420;
-map.createPane('huntPane');
-map.getPane('huntPane').style.zIndex = 430;
-map.createPane('selectedHuntPane');
-map.getPane('selectedHuntPane').style.zIndex = 440;
-
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -270,6 +274,17 @@ function getHuntBoundaryStyle() {
 
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
+
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+map.createPane('blmPane');
+map.getPane('blmPane').style.zIndex = 410;
+map.createPane('usfsPane');
+map.getPane('usfsPane').style.zIndex = 420;
+map.createPane('huntPane');
+map.getPane('huntPane').style.zIndex = 430;
+map.createPane('selectedHuntPane');
+map.getPane('selectedHuntPane').style.zIndex = 440;
 
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -447,6 +462,7 @@ function buildLiveHuntUnitsLayer() {
   };
 
   try {
+    // Use FeatureLayer so we can control line weight and fill directly.
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: `${DWR_MAPSERVER}/0`,
       pane: 'huntPane',
@@ -481,7 +497,7 @@ function buildUSFSLayer() {
 
   usfsDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
-    const forest = firstNonEmpty(p.FORESTNAME, p.FORESTNAMECOMMON, p.FORESTSHORTNAME, 'National Forest');
+    const forest = getUsfsLabel(p);
     const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
     return `<b>${escapeHtml(forest)}</b><br>${escapeHtml(office)}`;
   });
@@ -489,7 +505,7 @@ function buildUSFSLayer() {
   usfsDistrictLayer.on('click', evt => {
     suppressNextMapClickInfo = true;
     const p = evt.layer?.feature?.properties || {};
-    const forest = firstNonEmpty(p.FORESTNAME, p.FORESTNAMECOMMON, p.FORESTSHORTNAME, 'National Forest');
+    const forest = getUsfsLabel(p);
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}`;
     }
@@ -735,11 +751,16 @@ async function refreshLiveBoundaryFilter() {
       return;
     }
 
-    applyLiveBoundaryWhere('1=0');
+    if (map.hasLayer(liveHuntUnitsLayer)) {
+      map.removeLayer(liveHuntUnitsLayer);
+    }
     await renderSelectedBoundaryOnly(where);
   } catch (err) {
     console.error('Boundary filter failed:', err);
     clearSelectedBoundaryLayer();
+    if (toggleLiveUnits?.checked && !map.hasLayer(liveHuntUnitsLayer)) {
+      liveHuntUnitsLayer.addTo(map);
+    }
     applyLiveBoundaryWhere('1=1');
   }
 }
@@ -750,33 +771,19 @@ function renderOwnershipPlaceholders() {
   privateLayer.clearLayers();
 
   if (toggleSITLA?.checked) {
-    L.circleMarker([39.05, -111.9], {
-      radius: 7,
-      color: '#4f9d62',
-      fillColor: '#4f9d62',
-      fillOpacity: 0.35,
-      weight: 2
-    }).addTo(sitlaLayer).bindPopup('<b>SITLA</b><br>Placeholder layer');
+    L.circleMarker([39.05, -111.9], { radius: 7, color: '#4f9d62', fillColor: '#4f9d62', fillOpacity: 0.35, weight: 2 })
+      .addTo(sitlaLayer)
+      .bindPopup('<b>SITLA</b><br>Placeholder layer');
   }
-
   if (toggleState?.checked) {
-    L.circleMarker([40.1, -111.9], {
-      radius: 7,
-      color: '#2b8f9a',
-      fillColor: '#2b8f9a',
-      fillOpacity: 0.35,
-      weight: 2
-    }).addTo(stateLayer).bindPopup('<b>State Lands</b><br>Placeholder layer');
+    L.circleMarker([40.1, -111.9], { radius: 7, color: '#2b8f9a', fillColor: '#2b8f9a', fillOpacity: 0.35, weight: 2 })
+      .addTo(stateLayer)
+      .bindPopup('<b>State Lands</b><br>Placeholder layer');
   }
-
   if (togglePrivate?.checked) {
-    L.circleMarker([38.9, -111.2], {
-      radius: 7,
-      color: '#9a3e3e',
-      fillColor: '#9a3e3e',
-      fillOpacity: 0.35,
-      weight: 2
-    }).addTo(privateLayer).bindPopup('<b>Private Lands</b><br>Placeholder layer');
+    L.circleMarker([38.9, -111.2], { radius: 7, color: '#9a3e3e', fillColor: '#9a3e3e', fillOpacity: 0.35, weight: 2 })
+      .addTo(privateLayer)
+      .bindPopup('<b>Private Lands</b><br>Placeholder layer');
   }
 }
 
@@ -1084,7 +1091,6 @@ if (toggleLiveUnits) {
       refreshLiveBoundaryFilter();
     } else {
       map.removeLayer(liveHuntUnitsLayer);
-      clearSelectedBoundaryLayer();
     }
   });
 }
