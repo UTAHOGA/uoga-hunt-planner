@@ -633,9 +633,9 @@ function clearSelectedBoundaryLayer() {
 async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
 
-  if (!whereClause || whereClause === '1=0') return;
+  if (!whereClause || whereClause === '1=0') return false;
 
-  if (!window.L || !window.L.esri) return;
+  if (!window.L || !window.L.esri) return false;
 
   selectedBoundaryLayer = L.esri.featureLayer({
     url: DWR_HUNT_BOUNDARY_LAYER,
@@ -654,6 +654,7 @@ async function renderSelectedBoundaryOnly(whereClause) {
   });
 
   selectedBoundaryLayer.addTo(map);
+  return true;
 }
 
 function chunk(items, size) {
@@ -838,11 +839,14 @@ async function refreshLiveBoundaryFilter() {
     if (toggleLiveUnits?.checked) {
       if (!liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
       if (liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) liveHuntUnitsLayer.addTo(map);
-      applyLiveBoundaryWhere('1=0');
+      applyLiveBoundaryWhere('1=1');
     } else if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
       map.removeLayer(liveHuntUnitsLayer);
     }
-    await renderSelectedBoundaryOnly(where);
+    const selectedRendered = await renderSelectedBoundaryOnly(where);
+    if (toggleLiveUnits?.checked && selectedRendered && selectedBoundaryLayer) {
+      applyLiveBoundaryWhere('1=0');
+    }
   } catch (err) {
     console.error('Boundary filter failed:', err);
     clearSelectedBoundaryLayer();
