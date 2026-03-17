@@ -28,7 +28,8 @@ const DWR_MAPSERVER =
   'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
-  'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
+  'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
+const LOCAL_HUNT_BOUNDARIES_PATH = './data/hunt_boundaries_arcgis.json';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -374,6 +375,7 @@ let selectedBoundaryLayer = null;
 let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
 let liveLayerSource = 'none';
+let huntBoundaryData = null;
 let huntResultsLimit = 100;
 let liveFilterToken = 0;
 let boundaryZoomToken = 0;
@@ -420,6 +422,18 @@ async function loadHuntData() {
   else huntData = [];
 
   if (!huntData.length) throw new Error('No hunt records found in JSON.');
+}
+
+async function loadBoundaryData() {
+  const res = await fetch(LOCAL_HUNT_BOUNDARIES_PATH, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load boundary data: ${res.status}`);
+
+  const data = await res.json();
+  if (!Array.isArray(data?.features) || !data.features.length) {
+    throw new Error('No hunt boundary features found in local boundary file.');
+  }
+
+  huntBoundaryData = data;
 }
 
 function setBuildMarker() {
@@ -531,32 +545,62 @@ function getSelectedOutfitters() {
     });
 }
 
-function buildLiveHuntUnitsLayer() {
-  if (!window.L || !window.L.esri) return;
+function getBoundaryFeatureAttributes(feature) {
+  return feature?.attributes || feature?.properties || {};
+}
+
+function getBoundaryFeatureId(feature) {
+  const attrs = getBoundaryFeatureAttributes(feature);
+  return safe(firstNonEmpty(attrs.BoundaryID, attrs.BOUNDARYID, attrs.boundaryId)).trim();
+}
+
+function getBoundaryFeatureName(feature) {
+  const attrs = getBoundaryFeatureAttributes(feature);
+  return safe(firstNonEmpty(attrs.Boundary_Name, attrs.BOUNDARY_NAME, attrs.boundaryName)).trim();
+}
+
+function getBoundarySourceFeatures() {
+  return Array.isArray(huntBoundaryData?.features) ? huntBoundaryData.features : [];
+}
+
+function convertBoundaryFeatureToGeoJSON(feature) {
+  if (!window.L || !window.L.esri?.Util?.arcgisToGeoJSON) return null;
+
+  try {
+    return L.esri.Util.arcgisToGeoJSON(feature);
+  } catch (err) {
+    console.error('Boundary conversion failed:', err);
+    return null;
+  }
+}
+
+function renderLiveHuntUnitsFeatures(features) {
+  if (!window.L) return;
 
   if (liveHuntUnitsLayer) {
     try { map.removeLayer(liveHuntUnitsLayer); } catch (e) {}
   }
 
-  try {
-    liveHuntUnitsLayer = L.esri.featureLayer({
-      url: DWR_HUNT_BOUNDARY_LAYER,
+  const geojsonFeatures = features
+    .map(convertBoundaryFeatureToGeoJSON)
+    .filter(Boolean);
+
+  liveHuntUnitsLayer = L.geoJSON(
+    { type: 'FeatureCollection', features: geojsonFeatures },
+    {
       pane: 'huntPane',
       style: () => getHuntBoundaryStyle()
-    });
-    liveLayerSource = 'dwr-feature';
-    liveHuntUnitsLayer.on('error', err => {
-      console.error('DWR hunt layer failed:', err);
-      liveHuntUnitsLayer = null;
-      liveLayerSource = 'none';
-    });
+    }
+  );
 
-    if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
-  } catch (e) {
-    console.error('DWR hunt layer setup failed:', e);
-    liveHuntUnitsLayer = null;
-    liveLayerSource = 'none';
-  }
+  liveLayerSource = 'local-boundary-file';
+  if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
+}
+
+function buildLiveHuntUnitsLayer() {
+  const features = getBoundarySourceFeatures();
+  if (!features.length) return;
+  renderLiveHuntUnitsFeatures(features);
 }
 
 function buildUSFSLayer() {
@@ -626,8 +670,19 @@ function buildBLMLayer() {
 }
 
 function applyLiveBoundaryWhere(whereClause) {
-  if (!liveHuntUnitsLayer || typeof liveHuntUnitsLayer.setWhere !== 'function') return;
-  liveHuntUnitsLayer.setWhere(whereClause || '1=1');
+  if (!toggleLiveUnits?.checked) return;
+
+  const allFeatures = getBoundarySourceFeatures();
+  if (!allFeatures.length) return;
+
+  if (!selectedHunt || !whereClause || whereClause === '1=1') {
+    renderLiveHuntUnitsFeatures(allFeatures);
+    return;
+  }
+
+  const { names, ids } = buildBoundaryMatchSets(selectedHunt);
+  const filtered = filterBoundaryFeatures(names, ids);
+  renderLiveHuntUnitsFeatures(filtered.length ? filtered : allFeatures);
 }
 
 function clearSelectedBoundaryLayer() {
@@ -638,32 +693,6 @@ function clearSelectedBoundaryLayer() {
 
 async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
-
-  if (!whereClause || whereClause === '1=0') return false;
-  if (!window.L || !window.L.esri) return false;
-
-  selectedBoundaryLayer = L.esri.featureLayer({
-    url: DWR_HUNT_BOUNDARY_LAYER,
-    pane: 'selectedHuntPane',
-    where: whereClause,
-    style: () => ({
-      color: '#0037ff',
-      weight: map.getZoom() <= 6 ? 3 : map.getZoom() <= 8 ? 4 : 5,
-      fillColor: '#4d7cff',
-      fillOpacity: 0.35
-    })
-  });
-
-  selectedBoundaryLayer.on('error', err => {
-    console.error('Selected boundary layer failed:', err);
-  });
-
-  selectedBoundaryLayer.addTo(map);
-
-  if (typeof selectedBoundaryLayer.bringToFront === 'function') {
-    selectedBoundaryLayer.bringToFront();
-  }
-
   return true;
 }
 
@@ -852,6 +881,38 @@ function buildBoundaryFilterSql(names, ids) {
   return `(${clauses.join(' OR ')})`;
 }
 
+function buildBoundaryMatchSets(hunt) {
+  const names = new Set();
+  const ids = new Set();
+
+  const huntCode = safe(getHuntCode(hunt)).trim();
+  const overrideNames = HUNT_BOUNDARY_NAME_OVERRIDES[huntCode] || [];
+  overrideNames.forEach(name => names.add(name.trim().toLowerCase()));
+
+  getBoundaryNameCandidates(hunt).forEach(name => names.add(safe(name).trim().toLowerCase()));
+
+  getBoundarySourceFeatures().forEach(feature => {
+    const featureId = getBoundaryFeatureId(feature);
+    const featureName = getBoundaryFeatureName(feature).toLowerCase();
+    if (overrideNames.some(name => safe(name).trim().toLowerCase() === featureName)) {
+      if (featureId) ids.add(featureId);
+    }
+  });
+
+  return { names, ids };
+}
+
+function filterBoundaryFeatures(names, ids) {
+  const nameSet = new Set(Array.from(names).map(name => safe(name).trim().toLowerCase()));
+  const idSet = new Set(Array.from(ids).map(id => safe(id).trim()));
+
+  return getBoundarySourceFeatures().filter(feature => {
+    const featureName = getBoundaryFeatureName(feature).toLowerCase();
+    const featureId = getBoundaryFeatureId(feature);
+    return nameSet.has(featureName) || idSet.has(featureId);
+  });
+}
+
 async function refreshLiveBoundaryFilter() {
   const token = ++liveFilterToken;
 
@@ -875,18 +936,19 @@ async function refreshLiveBoundaryFilter() {
   }
 
   try {
-    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
+    const remote = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
-    const where = buildBoundaryFilterSql(names, ids);
-    console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
-
+    const local = buildBoundaryMatchSets(selectedHunt);
+    const names = new Set([...remote.names, ...local.names]);
+    const ids = new Set([...remote.ids, ...local.ids]);
     clearSelectedBoundaryLayer();
-    applyLiveBoundaryWhere(where && where !== '1=0' ? where : '1=1');
+    const filtered = filterBoundaryFeatures(names, ids);
+    renderLiveHuntUnitsFeatures(filtered.length ? filtered : getBoundarySourceFeatures());
   } catch (err) {
     console.error('Boundary filter failed:', err);
     clearSelectedBoundaryLayer();
-    applyLiveBoundaryWhere('1=1');
+    renderLiveHuntUnitsFeatures(getBoundarySourceFeatures());
   }
 }
   
@@ -1347,6 +1409,7 @@ map.on('zoomend', () => {
     setBuildMarker();
 
     await loadHuntData();
+    await loadBoundaryData();
 
     populateSpecies();
     populateUnits();
