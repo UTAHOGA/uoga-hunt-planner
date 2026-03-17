@@ -104,6 +104,7 @@ const speciesFilter = document.getElementById('speciesFilter');
 const sexFilter = document.getElementById('sexFilter');
 const weaponFilter = document.getElementById('weaponFilter');
 const huntTypeFilter = document.getElementById('huntTypeFilter');
+const huntCategoryFilter = document.getElementById('huntCategoryFilter');
 const unitFilter = document.getElementById('unitFilter');
 const basemapSelect = document.getElementById('basemapSelect');
 
@@ -308,6 +309,18 @@ function getWeapon(h) {
 
 function getHuntType(h) {
   return firstNonEmpty(h.huntType, h.HuntType, h.hunt_type, h.type, h.Type);
+}
+
+function getHuntCategory(h) {
+  const species = getSpeciesList(h).map(s => s.toLowerCase());
+  const title = getHuntTitle(h).toLowerCase();
+  const huntType = getHuntType(h).toLowerCase();
+
+  if (title.includes('spike')) return 'Spike Only';
+  if (huntType.includes('youth') || title.includes('youth')) return 'Youth';
+  if (huntType.includes('limited')) return 'Limited Entry';
+  if (species.includes('elk') && huntType.includes('general')) return 'General Bull';
+  return getHuntType(h) || '';
 }
 
 function getDates(h) {
@@ -576,6 +589,7 @@ function hasActiveHuntFilters() {
     safe(sexFilter?.value) !== 'All' ||
     safe(weaponFilter?.value) !== 'All' ||
     safe(huntTypeFilter?.value) !== 'All' ||
+    safe(huntCategoryFilter?.value) !== 'All' ||
     safe(unitFilter?.value).trim()
   );
 }
@@ -586,6 +600,7 @@ function getFilteredHunts() {
   const sex = safe(sexFilter?.value || 'All');
   const weapon = safe(weaponFilter?.value || 'All');
   const huntType = safe(huntTypeFilter?.value || 'All');
+  const huntCategory = safe(huntCategoryFilter?.value || 'All');
   const unit = safe(unitFilter?.value || '');
 
   return huntData.filter(h => {
@@ -608,6 +623,7 @@ function getFilteredHunts() {
     const sexOk = matchesFilter(sex, getSex(h));
     const weaponOk = matchesFilter(weapon, getWeapon(h));
     const huntTypeOk = matchesFilter(huntType, getHuntType(h));
+    const huntCategoryOk = matchesFilter(huntCategory, getHuntCategory(h));
 
     const unitOk =
       !unit ||
@@ -615,7 +631,7 @@ function getFilteredHunts() {
       getUnitName(h) === unit ||
       getUnitCode(h) === unit;
 
-    return searchOk && speciesOk && sexOk && weaponOk && huntTypeOk && unitOk;
+    return searchOk && speciesOk && sexOk && weaponOk && huntTypeOk && huntCategoryOk && unitOk;
   });
 }
 
@@ -1408,6 +1424,7 @@ function resetPlanner() {
   if (sexFilter) sexFilter.value = 'All';
   if (weaponFilter) weaponFilter.value = 'All';
   if (huntTypeFilter) huntTypeFilter.value = 'All';
+  if (huntCategoryFilter) huntCategoryFilter.value = 'All';
   if (unitFilter) unitFilter.value = '';
 
   populateUnits();
@@ -1427,7 +1444,7 @@ function resetPlanner() {
   refreshLiveBoundaryFilter();
 }
 
-[searchInput, speciesFilter, sexFilter, weaponFilter, huntTypeFilter].forEach(el => {
+[searchInput, speciesFilter, sexFilter, weaponFilter, huntTypeFilter, huntCategoryFilter].forEach(el => {
   if (!el) return;
   const handler = () => {
     huntResultsLimit = 100;
