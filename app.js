@@ -50,6 +50,22 @@ const HUNT_DATA_SOURCES = [
       './data/Utah_Hunt_Planner_Master_Elk.json',
       './data/Utah_Hunt_Planner_Master_Elk.json.json'
     ]
+  },
+  {
+    label: 'General Elk',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_GeneralElk.json',
+      './data/Utah_Hunt_Planner_Master_GeneralElk.json.json'
+    ]
+  },
+  {
+    label: 'Spike Elk',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_SpikeElk.json',
+      './data/Utah_Hunt_Planner_Master_SpikeElk.json.json'
+    ]
   }
 ];
 
@@ -300,6 +316,15 @@ function getDates(h) {
 
 function getRegion(h) {
   return firstNonEmpty(h.region, h.Region, h.REGION);
+}
+
+function isProvisionalRecord(h) {
+  const guide = firstNonEmpty(h.sourceGuide, h.SourceGuide, h.source_guide);
+  return guide.toLowerCase().includes('used provisionally');
+}
+
+function getProvisionalNote(h) {
+  return isProvisionalRecord(h) ? 'Provisional: based on 2025 field regulations until 2026 field regs are published.' : '';
 }
 
 function getHuntLat(h) {
@@ -1252,6 +1277,7 @@ function renderAreaInfo() {
     <strong>Weapon:</strong> ${escapeHtml(getWeapon(selectedHunt))}<br>
     <strong>Hunt Type:</strong> ${escapeHtml(getHuntType(selectedHunt))}<br>
     <strong>Dates:</strong> ${escapeHtml(getDates(selectedHunt))}
+    ${getProvisionalNote(selectedHunt) ? `<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getProvisionalNote(selectedHunt))}</span>` : ''}
   `;
 }
 
