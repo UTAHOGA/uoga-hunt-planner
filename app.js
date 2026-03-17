@@ -362,7 +362,7 @@ const basemaps = {
   )
 };
 
-basemaps.osm.addTo(map);
+basemaps.topo.addTo(map);
 
 const unitCenterLayer = L.layerGroup().addTo(map);
 const outfitterLayer = L.layerGroup().addTo(map);
@@ -678,21 +678,13 @@ function buildBLMLayer() {
 function applyLiveBoundaryWhere(whereClause) {
   if (!toggleLiveUnits?.checked) return;
 
-  const allFeatures = getBoundarySourceFeatures();
-  if (!allFeatures.length) return;
-
-  if (!selectedHunt || !whereClause || whereClause === '1=1') {
-    if (hasActiveHuntFilters() && map.getZoom() >= 7) {
-      renderLiveHuntUnitsFeatures(allFeatures);
-    } else {
-      renderLiveHuntUnitsFeatures([]);
-    }
+  if (selectedHunt) return;
+  if (!hasActiveHuntFilters()) {
+    renderLiveHuntUnitsFeatures([]);
     return;
   }
 
-  const { names, ids } = buildBoundaryMatchSets(selectedHunt);
-  const filtered = filterBoundaryFeatures(names, ids);
-  renderLiveHuntUnitsFeatures(filtered.length ? filtered : allFeatures);
+  renderLiveHuntUnitsFeatures(getFilteredBoundaryFeatures());
 }
 
 function clearSelectedBoundaryLayer() {
@@ -712,7 +704,9 @@ function renderUtahOutline() {
   const utahBounds = [
     [37.0, -114.05],
     [42.0, -114.05],
-    [42.0, -109.04],
+    [42.0, -111.05],
+    [41.0, -111.05],
+    [41.0, -109.04],
     [37.0, -109.04],
     [37.0, -114.05]
   ];
@@ -942,6 +936,20 @@ function filterBoundaryFeatures(names, ids) {
   });
 }
 
+function getFilteredBoundaryFeatures() {
+  const mergedNames = new Set();
+  const mergedIds = new Set();
+
+  getFilteredHunts().forEach(hunt => {
+    const matchSets = buildBoundaryMatchSets(hunt);
+    matchSets.names.forEach(name => mergedNames.add(name));
+    matchSets.ids.forEach(id => mergedIds.add(id));
+  });
+
+  if (!mergedNames.size && !mergedIds.size) return [];
+  return filterBoundaryFeatures(mergedNames, mergedIds);
+}
+
 async function refreshLiveBoundaryFilter() {
   const token = ++liveFilterToken;
 
@@ -973,11 +981,12 @@ async function refreshLiveBoundaryFilter() {
     const ids = new Set([...remote.ids, ...local.ids]);
     clearSelectedBoundaryLayer();
     const filtered = filterBoundaryFeatures(names, ids);
-    renderLiveHuntUnitsFeatures(filtered.length ? filtered : getBoundarySourceFeatures());
+    renderLiveHuntUnitsFeatures(filtered);
   } catch (err) {
     console.error('Boundary filter failed:', err);
     clearSelectedBoundaryLayer();
-    renderLiveHuntUnitsFeatures(getBoundarySourceFeatures());
+    const local = buildBoundaryMatchSets(selectedHunt);
+    renderLiveHuntUnitsFeatures(filterBoundaryFeatures(local.names, local.ids));
   }
 }
   
@@ -1050,7 +1059,7 @@ function renderUnitCenters() {
       </div>
     `).join('');
 
-    L.marker(map.getCenter(), { opacity: 0 })
+    L.marker([39.35, -116.4], { opacity: 0 })
       .addTo(unitCenterLayer)
       .bindPopup(`<div style="min-width:220px;max-height:280px;overflow:auto;"><strong>Filtered Hunt Units</strong><div style="margin-top:10px;">${html}</div></div>`)
       .openPopup();
@@ -1280,12 +1289,12 @@ if (unitFilter) {
 }
 
 if (basemapSelect) {
-  basemapSelect.value = 'osm';
+  basemapSelect.value = 'topo';
   basemapSelect.addEventListener('change', () => {
     Object.values(basemaps).forEach(layer => {
       if (map.hasLayer(layer)) map.removeLayer(layer);
     });
-    (basemaps[basemapSelect.value] || basemaps.osm).addTo(map);
+    (basemaps[basemapSelect.value] || basemaps.topo).addTo(map);
 
     if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
     if (toggleLiveUnits?.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
