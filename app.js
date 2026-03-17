@@ -29,7 +29,7 @@ const DWR_HUNT_TABLE = `${DWR_MAPSERVER}/1`;
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
-  cache: [41.78, -111.62],
+  'cache': [41.78, -111.62],
   'chalk-creek-east': [40.88, -111.07],
   'diamond-mountain': [40.42, -109.18],
   'fillmore-oak-creek': [38.95, -112.33],
@@ -246,8 +246,6 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
-
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -261,6 +259,8 @@ function getHuntBoundaryStyle() {
 
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
+
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
 
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -461,7 +461,7 @@ function buildUSFSLayer() {
 
   usfsDistrictLayer = L.esri.featureLayer({
     url: 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/0',
-    where: "FORESTORGCODE IN ('01','04')",
+    where: "FORESTNAME IN ('Ashley National Forest','Dixie National Forest','Fishlake National Forest','Manti-La Sal National Forest','Uinta-Wasatch-Cache National Forest')",
     style: () => ({ color: '#476f2d', weight: 2.5, fillOpacity: 0.02 })
   });
 
@@ -632,7 +632,7 @@ function buildBoundaryFilterSql(names, ids) {
 
   if (names.size) {
     const list = Array.from(names).map(n => `'${safe(n).replace(/'/g, "''")}'`).join(',');
-    clauses.push(`Boundary_Name IN (${list})`);
+    clauses.push(`BOUNDARY_NAME IN (${list})`);
   }
 
   if (ids.size) {
