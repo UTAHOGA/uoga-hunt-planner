@@ -5,6 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
+const APP_BUILD = 'build-2026-03-16-01';
 
 const outfitters = [
   {
@@ -139,8 +140,12 @@ function getUsfsLabel(properties) {
 
 function getBlmLabel(properties) {
   const p = properties || {};
-  return firstNonEmpty(
+  const label = firstNonEmpty(
     p.ADMU_NAME,
+    p.ADMU_DISPLAY_NAME,
+    p.ADMIN_ST_NAME,
+    p.OFFICE_NAME,
+    p.DISTRICT_NAME,
     p.PARENT_NAME,
     p.ADM_UNIT_CD,
     p.ADMIN_UNIT,
@@ -148,6 +153,12 @@ function getBlmLabel(properties) {
     p.NAME,
     'BLM Utah Administrative Unit'
   );
+
+  return label
+    .replace(/\s+field\s+office$/i, ' District')
+    .replace(/\s+district\s+office$/i, ' District')
+    .replace(/\s+office$/i, '')
+    .trim();
 }
 
 function getFieldPreview(properties, preferredKeys = []) {
@@ -384,6 +395,12 @@ async function loadHuntData() {
   if (!huntData.length) throw new Error('No hunt records found in JSON.');
 }
 
+function setBuildMarker() {
+  if (selectedMeta && !selectedHunt) {
+    selectedMeta.textContent = `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`;
+  }
+}
+
 function getFilteredHunts() {
   const search = safe(searchInput?.value).trim().toLowerCase();
   const species = safe(speciesFilter?.value || 'All Species');
@@ -495,11 +512,11 @@ function buildLiveHuntUnitsLayer() {
   }
 
   try {
-    liveHuntUnitsLayer = L.esri.featureLayer({
-      url: DWR_HUNT_BOUNDARY_LAYER,
-      pane: 'huntPane',
-      style: () => getHuntBoundaryStyle()
-    });
+      liveHuntUnitsLayer = L.esri.featureLayer({
+        url: DWR_HUNT_BOUNDARY_LAYER,
+        pane: 'huntPane',
+        style: () => getHuntBoundaryStyle()
+      });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
@@ -539,6 +556,8 @@ function buildUSFSLayer() {
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
+    const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
+    evt.layer.bindPopup(`<b>${escapeHtml(forest)}</b><br>${escapeHtml(office)}`).openPopup();
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`;
     }
@@ -570,8 +589,9 @@ function buildBLMLayer() {
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
+    evt.layer.bindPopup(`<b>BLM Utah</b><br>${escapeHtml(unit)}`).openPopup();
     if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'BLM_ORG_TYPE', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
+      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
     }
   });
 
@@ -675,10 +695,10 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-    const url =
-      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-      `where=${encodeURIComponent(where)}` +
-      '&returnExtentOnly=true' +
+      const url =
+        `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+        `where=${encodeURIComponent(where)}` +
+        '&returnExtentOnly=true' +
       '&outSR=4326' +
       '&f=json';
 
@@ -1049,7 +1069,7 @@ function resetPlanner() {
   populateUnits();
 
   if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
-  if (selectedMeta) selectedMeta.textContent = 'Choose filters or click a hunt unit to load hunt and outfitter results.';
+  setBuildMarker();
 
   map.setView([39.3, -111.7], 6);
 
@@ -1082,7 +1102,7 @@ if (unitFilter) {
       selectedHunt = null;
       selectedUnit = null;
       if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
-      if (selectedMeta) selectedMeta.textContent = 'Choose filters or click a hunt unit to load hunt and outfitter results.';
+      setBuildMarker();
       renderAreaInfo();
       renderOutfitters();
       renderOutfitterResults();
@@ -1250,6 +1270,7 @@ map.on('zoomend', () => {
   try {
     if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Loading...</option>';
     if (unitFilter) unitFilter.innerHTML = '<option value="">Loading...</option>';
+    setBuildMarker();
 
     await loadHuntData();
 
@@ -1284,6 +1305,7 @@ map.on('zoomend', () => {
     if (areaInfoEl) {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
     }
+    setBuildMarker();
     window.setTimeout(() => map.invalidateSize(), 0);
   }
 })();
