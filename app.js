@@ -141,6 +141,10 @@ function getBlmLabel(properties) {
   const p = properties || {};
   return firstNonEmpty(
     p.ADMU_NAME,
+    p.ADMU_DISPLAY_NAME,
+    p.ADMIN_ST_NAME,
+    p.OFFICE_NAME,
+    p.DISTRICT_NAME,
     p.PARENT_NAME,
     p.ADM_UNIT_CD,
     p.ADMIN_UNIT,
@@ -571,7 +575,7 @@ function buildBLMLayer() {
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
     if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'BLM_ORG_TYPE', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
+      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
     }
   });
 
