@@ -261,6 +261,17 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+map.createPane('blmPane');
+map.getPane('blmPane').style.zIndex = 430;
+map.createPane('usfsPane');
+map.getPane('usfsPane').style.zIndex = 440;
+map.createPane('huntPane');
+map.getPane('huntPane').style.zIndex = 350;
+map.createPane('selectedHuntPane');
+map.getPane('selectedHuntPane').style.zIndex = 450;
+
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -274,17 +285,6 @@ function getHuntBoundaryStyle() {
 
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
-
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
-
-map.createPane('blmPane');
-map.getPane('blmPane').style.zIndex = 430;
-map.createPane('usfsPane');
-map.getPane('usfsPane').style.zIndex = 440;
-map.createPane('huntPane');
-map.getPane('huntPane').style.zIndex = 350;
-map.createPane('selectedHuntPane');
-map.getPane('selectedHuntPane').style.zIndex = 450;
 
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -455,16 +455,18 @@ function buildLiveHuntUnitsLayer() {
   };
 
   try {
-    liveHuntUnitsLayer = L.esri.featureLayer({
-      url: `${DWR_MAPSERVER}/0`,
+    liveHuntUnitsLayer = L.esri.dynamicMapLayer({
+      url: DWR_MAPSERVER,
       pane: 'huntPane',
-      style: () => getHuntBoundaryStyle()
+      layers: [0],
+      opacity: 0.75,
+      transparent: true
     });
-    liveLayerSource = 'dwr-feature';
+    liveLayerSource = 'dwr-dynamic';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
-      try { map.removeLayer(liveHuntUnitsLayer); } catch (e) {}
-      fallback();
+      liveHuntUnitsLayer = null;
+      liveLayerSource = 'none';
     });
 
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
@@ -537,16 +539,7 @@ function buildBLMLayer() {
 }
 
 function applyLiveBoundaryWhere(whereClause) {
-  if (!liveHuntUnitsLayer) return;
-
-  if (liveLayerSource === 'dwr-feature' && typeof liveHuntUnitsLayer.setWhere === 'function') {
-    liveHuntUnitsLayer.setWhere(whereClause || '1=1');
-    return;
-  }
-
-  if (liveLayerSource === 'fallback' && typeof liveHuntUnitsLayer.setWhere === 'function') {
-    liveHuntUnitsLayer.setWhere('1=1');
-  }
+  return whereClause;
 }
 
 function clearSelectedBoundaryLayer() {
@@ -1191,9 +1184,6 @@ map.on('click', e => {
 });
 
 map.on('zoomend', () => {
-  if (liveHuntUnitsLayer && typeof liveHuntUnitsLayer.setStyle === 'function') {
-    liveHuntUnitsLayer.setStyle(() => getHuntBoundaryStyle());
-  }
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
     selectedBoundaryLayer.setStyle({
       color: '#1d3f91',
