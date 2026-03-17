@@ -29,7 +29,7 @@ const DWR_MAPSERVER =
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
-const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
+const LOCAL_HUNT_BOUNDARIES_PATH = './data/hunt_boundaries_arcgis.json';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -581,6 +581,11 @@ function renderLiveHuntUnitsFeatures(features) {
     try { map.removeLayer(liveHuntUnitsLayer); } catch (e) {}
   }
 
+  if (!features.length) {
+    liveHuntUnitsLayer = null;
+    return;
+  }
+
   const geojsonFeatures = features
     .map(convertBoundaryFeatureToGeoJSON)
     .filter(Boolean);
@@ -597,10 +602,14 @@ function renderLiveHuntUnitsFeatures(features) {
   if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
 }
 
+function shouldRenderAllBoundaries() {
+  return map.getZoom() >= 7;
+}
+
 function buildLiveHuntUnitsLayer() {
   const features = getBoundarySourceFeatures();
   if (!features.length) return;
-  renderLiveHuntUnitsFeatures(features);
+  renderLiveHuntUnitsFeatures(shouldRenderAllBoundaries() || selectedHunt ? features : []);
 }
 
 function buildUSFSLayer() {
@@ -676,7 +685,7 @@ function applyLiveBoundaryWhere(whereClause) {
   if (!allFeatures.length) return;
 
   if (!selectedHunt || !whereClause || whereClause === '1=1') {
-    renderLiveHuntUnitsFeatures(allFeatures);
+    renderLiveHuntUnitsFeatures(shouldRenderAllBoundaries() ? allFeatures : []);
     return;
   }
 
@@ -1389,9 +1398,7 @@ map.on('click', e => {
 });
 
 map.on('zoomend', () => {
-  if (liveHuntUnitsLayer && typeof liveHuntUnitsLayer.setStyle === 'function') {
-    liveHuntUnitsLayer.setStyle(() => getHuntBoundaryStyle());
-  }
+  refreshLiveBoundaryFilter();
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
     selectedBoundaryLayer.setStyle({
       color: '#1d3f91',
