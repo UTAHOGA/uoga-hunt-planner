@@ -91,8 +91,10 @@ const resultsEl = document.getElementById('results');
 const areaInfoEl = document.getElementById('areaInfo');
 const clickInfoEl = document.getElementById('clickInfo');
 const huntCountEl = document.getElementById('huntCount');
+const unitResultsEl = document.getElementById('unitResults');
 const resultsTrayEl = document.querySelector('.results');
 const toggleResultsTrayBtn = document.getElementById('toggleResultsTray');
+const mapWrapEl = document.getElementById('map-wrap');
 
 function safe(v) {
   return String(v ?? '');
@@ -328,6 +330,11 @@ function getHuntBoundaryStyle() {
   }
 
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
+}
+
+function updateMapAppearance() {
+  if (!mapWrapEl || !basemapSelect) return;
+  mapWrapEl.classList.toggle('terrain-boost', basemapSelect.value === 'topo');
 }
 
 const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
@@ -1042,28 +1049,50 @@ function renderUnitCenters() {
     marker.on('click', () => selectUnitByValue(key));
     count += 1;
   });
+}
 
-  if (count === 0 && filtered.length) {
-    const units = new Map();
-    filtered.forEach(h => {
-      const value = getUnitValue(h);
-      const label = getUnitName(h) || value;
-      if (!value) return;
-      if (!units.has(value)) units.set(value, label);
-    });
+function renderUnitResults() {
+  if (!unitResultsEl) return;
 
-    const list = Array.from(units.entries()).sort((a, b) => a[1].localeCompare(b[1])).slice(0, 60);
-    const html = list.map(([value, label]) => `
-      <div style="margin-bottom:8px;">
-        <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(value)}">${escapeHtml(label)}</button>
-      </div>
-    `).join('');
+  const units = new Map();
+  getFilteredHunts().forEach(h => {
+    const value = getUnitValue(h);
+    const label = getUnitName(h) || value;
+    if (!value) return;
+    if (!units.has(value)) units.set(value, h);
+  });
 
-    L.marker([39.35, -116.4], { opacity: 0 })
-      .addTo(unitCenterLayer)
-      .bindPopup(`<div style="min-width:220px;max-height:280px;overflow:auto;"><strong>Filtered Hunt Units</strong><div style="margin-top:10px;">${html}</div></div>`)
-      .openPopup();
+  const rows = Array.from(units.entries()).sort((a, b) => {
+    const aLabel = getUnitName(a[1]) || a[0];
+    const bLabel = getUnitName(b[1]) || b[0];
+    return aLabel.localeCompare(bLabel);
+  });
+
+  if (!rows.length) {
+    unitResultsEl.className = 'unit-list empty';
+    unitResultsEl.innerHTML = 'No hunt units match the current filters.';
+    return;
   }
+
+  unitResultsEl.className = 'unit-list';
+  unitResultsEl.innerHTML = rows.map(([value, hunt]) => {
+    const label = getUnitName(hunt) || value;
+    const unitCode = getUnitCode(hunt);
+    const meta = [
+      unitCode && unitCode !== label ? `Unit ${unitCode}` : '',
+      getSpeciesRaw(hunt),
+      getRegion(hunt)
+    ].filter(Boolean).join(' • ');
+    return `
+      <div class="unit-chip">
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+          <span>${escapeHtml(meta || value)}</span>
+        </div>
+        <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(value)}">Select</button>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderHuntResults() {
@@ -1201,6 +1230,7 @@ function selectUnitByValue(unitValue) {
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
+  renderUnitResults();
   renderHuntResults();
   refreshLiveBoundaryFilter();
 }
@@ -1221,6 +1251,7 @@ function selectHuntByCode(huntCode) {
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
+  renderUnitResults();
   renderHuntResults();
   refreshLiveBoundaryFilter();
 }
@@ -1252,6 +1283,7 @@ function resetPlanner() {
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
+  renderUnitResults();
   renderHuntResults();
   refreshLiveBoundaryFilter();
 }
@@ -1262,6 +1294,7 @@ function resetPlanner() {
     huntResultsLimit = 100;
     populateUnits();
     renderUnitCenters();
+    renderUnitResults();
     renderHuntResults();
     refreshLiveBoundaryFilter();
   };
@@ -1280,6 +1313,7 @@ if (unitFilter) {
       renderAreaInfo();
       renderOutfitters();
       renderOutfitterResults();
+      renderUnitResults();
       renderHuntResults();
       refreshLiveBoundaryFilter();
       return;
@@ -1290,11 +1324,13 @@ if (unitFilter) {
 
 if (basemapSelect) {
   basemapSelect.value = 'topo';
+  updateMapAppearance();
   basemapSelect.addEventListener('change', () => {
     Object.values(basemaps).forEach(layer => {
       if (map.hasLayer(layer)) map.removeLayer(layer);
     });
     (basemaps[basemapSelect.value] || basemaps.topo).addTo(map);
+    updateMapAppearance();
 
     if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
     if (toggleLiveUnits?.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
@@ -1464,6 +1500,7 @@ map.on('zoomend', () => {
     renderAreaInfo();
     renderOutfitters();
     renderOutfitterResults();
+    renderUnitResults();
     renderHuntResults();
     window.setTimeout(() => map.invalidateSize(), 0);
   } catch (err) {
@@ -1480,6 +1517,10 @@ map.on('zoomend', () => {
     }
     if (areaInfoEl) {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
+    }
+    if (unitResultsEl) {
+      unitResultsEl.className = 'unit-list empty';
+      unitResultsEl.innerHTML = `Unable to load hunt units: ${escapeHtml(err.message || String(err))}`;
     }
     setBuildMarker();
     window.setTimeout(() => map.invalidateSize(), 0);
