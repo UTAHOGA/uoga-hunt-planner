@@ -22,12 +22,14 @@ const outfitters = [
     unitsServed: 'beaver-east,fishlake,manti-san-rafael,monroe,fillmore,nebo',
     forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
   }
-]
+];
+
 const DWR_MAPSERVER =
   'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
+
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
@@ -46,6 +48,7 @@ const UNIT_CENTER_LOOKUP = {
   'south-slope-vernal': [40.46, -109.56],
   'west-desert-south': [38.78, -113.42]
 };
+
 const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1503: ['Manti, San Rafael'],
   DB1533: ['Manti, San Rafael'],
@@ -56,6 +59,7 @@ const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1506: ['Fillmore'],
   DB1536: ['Fillmore']
 };
+
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
 const sexFilter = document.getElementById('sexFilter');
@@ -535,11 +539,11 @@ function buildLiveHuntUnitsLayer() {
   }
 
   try {
-      liveHuntUnitsLayer = L.esri.featureLayer({
-        url: DWR_HUNT_BOUNDARY_LAYER,
-        pane: 'huntPane',
-        style: () => getHuntBoundaryStyle()
-      });
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: DWR_HUNT_BOUNDARY_LAYER,
+      pane: 'huntPane',
+      style: () => getHuntBoundaryStyle()
+    });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
@@ -636,7 +640,6 @@ async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
 
   if (!whereClause || whereClause === '1=0') return false;
-
   if (!window.L || !window.L.esri) return false;
 
   selectedBoundaryLayer = L.esri.featureLayer({
@@ -769,15 +772,16 @@ async function zoomToSelectedBoundary() {
 
     const where = buildBoundaryFilterSql(names, ids);
     console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
+
     if (!where || where === '1=0') {
       map.setView([39.3, -111.7], 7);
       return;
     }
 
-      const url =
-        `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-        `where=${encodeURIComponent(where)}` +
-        '&returnExtentOnly=true' +
+    const url =
+      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+      `where=${encodeURIComponent(where)}` +
+      '&returnExtentOnly=true' +
       '&outSR=4326' +
       '&f=json';
 
@@ -883,6 +887,7 @@ async function refreshLiveBoundaryFilter() {
     } else if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
       map.removeLayer(liveHuntUnitsLayer);
     }
+
     const selectedRendered = await renderSelectedBoundaryOnly(where);
     if (toggleLiveUnits?.checked && selectedRendered && selectedBoundaryLayer) {
       applyLiveBoundaryWhere('1=0');
