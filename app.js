@@ -5,6 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
+const APP_BUILD = 'build-2026-03-16-01';
 
 const outfitters = [
   {
@@ -25,9 +26,7 @@ const outfitters = [
 
 const DWR_MAPSERVER = 'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
-const DWR_HUNT_NUMBER_TO_BOUNDARIES = 'https://dwrapps.utah.gov/huntboundary/HuntNumberToBoundaries';
-
-const UNIT_CENTER_LOOKUP = {
+const UNIT_CENTER_LOOKUP const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
   'cache': [41.78, -111.62],
@@ -45,6 +44,16 @@ const UNIT_CENTER_LOOKUP = {
   'south-slope-vernal': [40.46, -109.56],
   'west-desert-south': [38.78, -113.42]
 };
+
+const HUNT_BOUNDARY_NAME_OVERRIDES = {
+  DB1503: ['Manti, San Rafael'],
+  DB1533: ['Manti, San Rafael'],
+  DB1504: ['Nebo'],
+  DB1534: ['Nebo'],
+  DB1510: ['Monroe'],
+  DB1540: ['Monroe'],
+  DB1506: ['Fillmore'],
+  DB1536: ['Fillmore']
 
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
@@ -139,8 +148,12 @@ function getUsfsLabel(properties) {
 
 function getBlmLabel(properties) {
   const p = properties || {};
-  return firstNonEmpty(
+  const label = firstNonEmpty(
     p.ADMU_NAME,
+    p.ADMU_DISPLAY_NAME,
+    p.ADMIN_ST_NAME,
+    p.OFFICE_NAME,
+    p.DISTRICT_NAME,
     p.PARENT_NAME,
     p.ADM_UNIT_CD,
     p.ADMIN_UNIT,
@@ -148,6 +161,12 @@ function getBlmLabel(properties) {
     p.NAME,
     'BLM Utah Administrative Unit'
   );
+
+  return label
+    .replace(/\s+field\s+office$/i, ' District')
+    .replace(/\s+district\s+office$/i, ' District')
+    .replace(/\s+office$/i, '')
+    .trim();
 }
 
 function getFieldPreview(properties, preferredKeys = []) {
@@ -384,6 +403,12 @@ async function loadHuntData() {
   if (!huntData.length) throw new Error('No hunt records found in JSON.');
 }
 
+function setBuildMarker() {
+  if (selectedMeta && !selectedHunt) {
+    selectedMeta.textContent = `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`;
+  }
+}
+
 function getFilteredHunts() {
   const search = safe(searchInput?.value).trim().toLowerCase();
   const species = safe(speciesFilter?.value || 'All Species');
@@ -495,11 +520,11 @@ function buildLiveHuntUnitsLayer() {
   }
 
   try {
-    liveHuntUnitsLayer = L.esri.featureLayer({
-      url: DWR_HUNT_BOUNDARY_LAYER,
-      pane: 'huntPane',
-      style: () => getHuntBoundaryStyle()
-    });
+      liveHuntUnitsLayer = L.esri.featureLayer({
+        url: DWR_HUNT_BOUNDARY_LAYER,
+        pane: 'huntPane',
+        style: () => getHuntBoundaryStyle()
+      });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
@@ -539,6 +564,8 @@ function buildUSFSLayer() {
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
+    const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
+    evt.layer.bindPopup(`<b>${escapeHtml(forest)}</b><br>${escapeHtml(office)}`).openPopup();
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`;
     }
@@ -570,8 +597,9 @@ function buildBLMLayer() {
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
+    evt.layer.bindPopup(`<b>BLM Utah</b><br>${escapeHtml(unit)}`).openPopup();
     if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'BLM_ORG_TYPE', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
+      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
     }
   });
 
@@ -594,32 +622,25 @@ async function renderSelectedBoundaryOnly(whereClause) {
 
   if (!whereClause || whereClause === '1=0') return;
 
-  const url =
-    `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-    `where=${encodeURIComponent(whereClause)}` +
-    '&outFields=*' +
-    '&returnGeometry=true' +
-    '&outSR=4326' +
-    '&f=geojson';
+  if (!window.L || !window.L.esri) return;
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Selected boundary query failed: ${response.status}`);
-  }
-
-  const geojson = await response.json();
-  const features = Array.isArray(geojson?.features) ? geojson.features : [];
-  if (!features.length) return;
-
-  selectedBoundaryLayer = L.geoJSON(geojson, {
+  selectedBoundaryLayer = L.esri.featureLayer({
+    url: DWR_HUNT_BOUNDARY_LAYER,
     pane: 'selectedHuntPane',
+    where: whereClause,
     style: () => ({
       color: '#1d3f91',
       weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
       fillColor: '#9cb4f2',
       fillOpacity: 0.18
     })
-  }).addTo(map);
+  });
+
+  selectedBoundaryLayer.on('error', err => {
+    console.error('Selected boundary layer failed:', err);
+  });
+
+  selectedBoundaryLayer.addTo(map);
 }
 
 function chunk(items, size) {
@@ -628,27 +649,51 @@ function chunk(items, size) {
   return out;
 }
 
-async function queryBoundaryNamesAndIds(huntCodes) {
-  const ids = new Set();
-  const chunks = chunk(huntCodes, 1);
+function titleCaseWords(value) {
+  return safe(value)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
 
-  for (const pack of chunks) {
-    const huntCode = safe(pack[0]).trim();
-    if (!huntCode) continue;
+function getBoundaryNameCandidates(hunt) {
+  const names = new Set();
+  const unitName = safe(getUnitName(hunt)).trim();
+  const unitCode = safe(getUnitCode(hunt)).trim();
 
-    const url = `${DWR_HUNT_NUMBER_TO_BOUNDARIES}?HN=${encodeURIComponent(huntCode)}`;
-    const res = await fetch(url, { credentials: 'omit' });
-    if (!res.ok) throw new Error(`HuntNumberToBoundaries query failed: ${res.status}`);
-    const data = await res.json();
-    const values = Array.isArray(data) ? data : [];
-
-    values.forEach(v => {
-      const i = safe(v).trim();
-      if (i) ids.add(i);
-    });
+  function addNameVariants(value) {
+    const base = safe(value).trim();
+    if (!base) return;
+    names.add(base);
+    names.add(titleCaseWords(base));
+    names.add(base.toUpperCase());
   }
 
-  return { names: new Set(), ids };
+  if (unitName) {
+    addNameVariants(unitName);
+    addNameVariants(unitName.replace(/\s*\/\s*/g, '/'));
+    addNameVariants(unitName.replace(/\s*\/\s*/g, ', '));
+    addNameVariants(unitName.replace(/\s*\/\s*/g, ' '));
+  }
+
+  if (unitCode) {
+    const codeName = titleCaseWords(unitCode.replace(/-/g, ' '));
+    if (codeName) {
+      addNameVariants(codeName);
+      addNameVariants(codeName.replace(/\s+East$/i, ', East'));
+      addNameVariants(codeName.replace(/\s+West$/i, ', West'));
+      addNameVariants(codeName.replace(/\s+North$/i, ', North'));
+      addNameVariants(codeName.replace(/\s+South$/i, ', South'));
+    }
+  }
+
+  return new Set(Array.from(names).filter(Boolean));
+}
+
+async function queryBoundaryNamesAndIds(hunt) {
+  const names = getBoundaryNameCandidates(hunt);
+  return { names, ids: new Set() };
 }
 
 async function zoomToSelectedBoundary() {
@@ -666,7 +711,7 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
+    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== boundaryZoomToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
@@ -675,10 +720,10 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-    const url =
-      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-      `where=${encodeURIComponent(where)}` +
-      '&returnExtentOnly=true' +
+      const url =
+        `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+        `where=${encodeURIComponent(where)}` +
+        '&returnExtentOnly=true' +
       '&outSR=4326' +
       '&f=json';
 
@@ -727,7 +772,9 @@ function buildBoundaryFilterSql(names, ids) {
   const clauses = [];
 
   if (names.size) {
-    const list = Array.from(names).map(n => `'${safe(n).replace(/'/g, "''")}'`).join(',');
+    const list = Array.from(names)
+      .map(n => `'${safe(n).trim().replace(/'/g, "''")}'`)
+      .join(',');
     clauses.push(`Boundary_Name IN (${list})`);
   }
 
@@ -765,7 +812,7 @@ async function refreshLiveBoundaryFilter() {
       return;
     }
 
-    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
+    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
@@ -1049,7 +1096,7 @@ function resetPlanner() {
   populateUnits();
 
   if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
-  if (selectedMeta) selectedMeta.textContent = 'Choose filters or click a hunt unit to load hunt and outfitter results.';
+  setBuildMarker();
 
   map.setView([39.3, -111.7], 6);
 
@@ -1082,7 +1129,7 @@ if (unitFilter) {
       selectedHunt = null;
       selectedUnit = null;
       if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
-      if (selectedMeta) selectedMeta.textContent = 'Choose filters or click a hunt unit to load hunt and outfitter results.';
+      setBuildMarker();
       renderAreaInfo();
       renderOutfitters();
       renderOutfitterResults();
@@ -1250,6 +1297,7 @@ map.on('zoomend', () => {
   try {
     if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Loading...</option>';
     if (unitFilter) unitFilter.innerHTML = '<option value="">Loading...</option>';
+    setBuildMarker();
 
     await loadHuntData();
 
@@ -1284,6 +1332,7 @@ map.on('zoomend', () => {
     if (areaInfoEl) {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
     }
+    setBuildMarker();
     window.setTimeout(() => map.invalidateSize(), 0);
   }
 })();
