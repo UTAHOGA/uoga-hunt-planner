@@ -32,6 +32,26 @@ const DWR_HUNT_INFO_TABLE =
 const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
 const USFS_LOGO_URL = 'https://static.wixstatic.com/media/43f827_d54826fa897541e6810ba74cc2fcf9d7~mv2.png';
 const BLM_LOGO_URL = 'https://static.wixstatic.com/media/43f827_612ebfea933a496784ac9e0ea3442f29~mv2.png';
+const HUNT_DATA_SOURCES = [
+  {
+    label: 'Buck Deer',
+    required: true,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json',
+      './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json.json'
+    ]
+  },
+  {
+    label: 'Bull Elk',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_BullElk.json',
+      './data/Utah_Hunt_Planner_Master_BullElk.json.json',
+      './data/Utah_Hunt_Planner_Master_Elk.json',
+      './data/Utah_Hunt_Planner_Master_Elk.json.json'
+    ]
+  }
+];
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -447,30 +467,58 @@ function shouldYieldToOverlay(source) {
 }
 
 async function loadHuntData() {
-  const candidates = [
-    './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json',
-    './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json.json'
-  ];
+  const merged = [];
+  const loadedLabels = [];
 
-  let data = null;
-  let lastStatus = 'not-started';
+  for (const source of HUNT_DATA_SOURCES) {
+    let data = null;
+    let lastStatus = 'not-started';
 
-  for (const url of candidates) {
-    const res = await fetch(url, { cache: 'no-store' });
-    lastStatus = res.status;
-    if (!res.ok) continue;
-    data = await res.json();
-    break;
+    for (const url of source.candidates) {
+      const res = await fetch(url, { cache: 'no-store' });
+      lastStatus = res.status;
+      if (!res.ok) continue;
+      data = await res.json();
+      break;
+    }
+
+    if (!data) {
+      if (source.required) {
+        throw new Error(`Failed to load ${source.label} hunt data: ${lastStatus}`);
+      }
+      continue;
+    }
+
+    let records = [];
+    if (Array.isArray(data)) records = data;
+    else if (Array.isArray(data.records)) records = data.records;
+    else if (Array.isArray(data.data)) records = data.data;
+
+    if (!records.length) {
+      if (source.required) {
+        throw new Error(`No hunt records found in ${source.label} JSON.`);
+      }
+      continue;
+    }
+
+    merged.push(...records);
+    loadedLabels.push(source.label);
   }
 
-  if (!data) throw new Error(`Failed to load hunt data: ${lastStatus}`);
+  const deduped = [];
+  const seenCodes = new Set();
+  merged.forEach(record => {
+    const code = safe(getHuntCode(record)).trim();
+    const key = code || JSON.stringify(record);
+    if (seenCodes.has(key)) return;
+    seenCodes.add(key);
+    deduped.push(record);
+  });
 
-  if (Array.isArray(data)) huntData = data;
-  else if (Array.isArray(data.records)) huntData = data.records;
-  else if (Array.isArray(data.data)) huntData = data.data;
-  else huntData = [];
+  huntData = deduped;
 
-  if (!huntData.length) throw new Error('No hunt records found in JSON.');
+  if (!huntData.length) throw new Error('No hunt records found in any JSON source.');
+  console.log('Loaded hunt datasets:', loadedLabels.join(', '));
 }
 
 async function loadBoundaryData() {
