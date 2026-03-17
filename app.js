@@ -322,14 +322,14 @@ function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
   if (zoom <= 6) {
-    return { color: '#3653b3', weight: 1.2, fillColor: '#d6def7', fillOpacity: 0.18 };
+    return { color: '#3653b3', weight: 1.2, fillColor: '#d6def7', fillOpacity: 0.12 };
   }
 
   if (zoom <= 8) {
-    return { color: '#3653b3', weight: 2, fillColor: '#d6def7', fillOpacity: 0.28 };
+    return { color: '#3653b3', weight: 2, fillColor: '#d6def7', fillOpacity: 0.18 };
   }
 
-  return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
+  return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.28 };
 }
 
 function updateMapAppearance() {
@@ -1021,34 +1021,7 @@ function renderOwnershipPlaceholders() {
 
 function renderUnitCenters() {
   unitCenterLayer.clearLayers();
-  if (toggleUnits && !toggleUnits.checked) return;
-
-  const filtered = getFilteredHunts();
-  const seen = new Set();
-  let count = 0;
-
-  filtered.forEach(h => {
-    const key = getUnitValue(h);
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-
-    const lat = getHuntLat(h);
-    const lng = getHuntLng(h);
-    if (!isLikelyUtahCoordinate(lat, lng)) return;
-
-    const marker = L.marker([lat, lng], {
-      icon: createDiamondIcon()
-    }).addTo(unitCenterLayer);
-
-    marker.bindPopup(`
-      <b>${escapeHtml(getUnitName(h) || key)}</b><br>
-      ${escapeHtml(getSpeciesRaw(h))}<br>
-      <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(key)}">Select Unit</button>
-    `);
-
-    marker.on('click', () => selectUnitByValue(key));
-    count += 1;
-  });
+  return;
 }
 
 function renderUnitResults() {
@@ -1111,11 +1084,13 @@ function renderHuntResults() {
   const html = filtered.slice(0, shown).map(h => {
     const code = getHuntCode(h);
     const title = getHuntTitle(h) || getUnitName(h) || code || 'Untitled Hunt';
+    const unitName = getUnitName(h) || getUnitValue(h) || 'N/A';
     const isSelected = selectedHunt && getHuntCode(selectedHunt) === code;
 
     return `
       <div class="result-card ${isSelected ? 'selected' : ''}">
         <h3>${escapeHtml(title)}</h3>
+        <div>${escapeHtml(unitName)}</div>
         <div>${escapeHtml(code)}</div>
         <div>${escapeHtml(getSex(h) || 'N/A')}</div>
         <div>${escapeHtml(getSpeciesRaw(h) || 'N/A')}</div>
