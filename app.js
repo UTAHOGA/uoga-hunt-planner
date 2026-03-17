@@ -292,12 +292,14 @@ const stateLayer = L.layerGroup().addTo(map);
 const privateLayer = L.layerGroup().addTo(map);
 
 let liveHuntUnitsLayer = null;
+let selectedBoundaryLayer = null;
 let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
 let liveLayerSource = 'none';
 let huntResultsLimit = 100;
 let liveFilterToken = 0;
 let boundaryZoomToken = 0;
+let suppressNextMapClickInfo = false;
 
 async function loadHuntData() {
   const res = await fetch('./data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json', { cache: 'no-store' });
@@ -473,6 +475,7 @@ function buildUSFSLayer() {
   });
 
   usfsDistrictLayer.on('click', evt => {
+    suppressNextMapClickInfo = true;
     const p = evt.layer?.feature?.properties || {};
     const forest = firstNonEmpty(p.FORESTNAME, p.FORESTNAMECOMMON, p.FORESTSHORTNAME, 'National Forest');
     if (clickInfoEl) {
@@ -500,6 +503,7 @@ function buildBLMLayer() {
   });
 
   blmDistrictLayer.on('click', evt => {
+    suppressNextMapClickInfo = true;
     const p = evt.layer?.feature?.properties || {};
     const unit = firstNonEmpty(p.ADMIN_UNIT, p.FIELD_OFFICE, p.NAME, 'BLM Utah Administrative Unit');
     if (clickInfoEl) {
@@ -521,6 +525,44 @@ function applyLiveBoundaryWhere(whereClause) {
   if (liveLayerSource === 'fallback' && typeof liveHuntUnitsLayer.setWhere === 'function') {
     liveHuntUnitsLayer.setWhere('1=1');
   }
+}
+
+function clearSelectedBoundaryLayer() {
+  if (!selectedBoundaryLayer) return;
+  try { map.removeLayer(selectedBoundaryLayer); } catch (e) {}
+  selectedBoundaryLayer = null;
+}
+
+async function renderSelectedBoundaryOnly(whereClause) {
+  clearSelectedBoundaryLayer();
+
+  if (!whereClause || whereClause === '1=0') return;
+
+  const url =
+    `${DWR_MAPSERVER}/0/query?` +
+    `where=${encodeURIComponent(whereClause)}` +
+    '&outFields=*' +
+    '&returnGeometry=true' +
+    '&outSR=4326' +
+    '&f=geojson';
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Selected boundary query failed: ${response.status}`);
+  }
+
+  const geojson = await response.json();
+  const features = Array.isArray(geojson?.features) ? geojson.features : [];
+  if (!features.length) return;
+
+  selectedBoundaryLayer = L.geoJSON(geojson, {
+    style: () => ({
+      color: '#1d3f91',
+      weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
+      fillColor: '#9cb4f2',
+      fillOpacity: 0.18
+    })
+  }).addTo(map);
 }
 
 function chunk(items, size) {
@@ -653,6 +695,10 @@ async function refreshLiveBoundaryFilter() {
   if (!liveHuntUnitsLayer) return;
 
   if (!selectedHunt) {
+    clearSelectedBoundaryLayer();
+    if (toggleLiveUnits?.checked && !map.hasLayer(liveHuntUnitsLayer)) {
+      liveHuntUnitsLayer.addTo(map);
+    }
     applyLiveBoundaryWhere('1=1');
     return;
   }
@@ -669,13 +715,16 @@ async function refreshLiveBoundaryFilter() {
 
     const where = buildBoundaryFilterSql(names, ids);
     if (!where || where === '1=0') {
+      clearSelectedBoundaryLayer();
       applyLiveBoundaryWhere('1=1');
       return;
     }
 
-    applyLiveBoundaryWhere(where);
+    applyLiveBoundaryWhere('1=0');
+    await renderSelectedBoundaryOnly(where);
   } catch (err) {
     console.error('Boundary filter failed:', err);
+    clearSelectedBoundaryLayer();
     applyLiveBoundaryWhere('1=1');
   }
 }
@@ -1000,6 +1049,7 @@ if (toggleLiveUnits) {
       refreshLiveBoundaryFilter();
     } else {
       map.removeLayer(liveHuntUnitsLayer);
+      clearSelectedBoundaryLayer();
     }
   });
 }
@@ -1095,6 +1145,10 @@ document.addEventListener('click', e => {
 });
 
 map.on('click', e => {
+  if (suppressNextMapClickInfo) {
+    suppressNextMapClickInfo = false;
+    return;
+  }
   if (!clickInfoEl) return;
   clickInfoEl.innerHTML = `<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
 });
@@ -1102,6 +1156,14 @@ map.on('click', e => {
 map.on('zoomend', () => {
   if (liveHuntUnitsLayer && typeof liveHuntUnitsLayer.setStyle === 'function') {
     liveHuntUnitsLayer.setStyle(() => getHuntBoundaryStyle());
+  }
+  if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
+    selectedBoundaryLayer.setStyle({
+      color: '#1d3f91',
+      weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
+      fillColor: '#9cb4f2',
+      fillOpacity: 0.18
+    });
   }
 });
 
