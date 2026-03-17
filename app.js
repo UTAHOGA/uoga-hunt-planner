@@ -706,8 +706,45 @@ function getBoundaryNameCandidates(hunt) {
 }
 
 async function queryBoundaryNamesAndIds(hunt) {
-  const names = getBoundaryNameCandidates(hunt);
-  return { names, ids: new Set() };
+  const huntCode = safe(getHuntCode(hunt)).trim();
+  const names = new Set();
+  const ids = new Set();
+
+  const overrideNames = HUNT_BOUNDARY_NAME_OVERRIDES[huntCode] || [];
+  overrideNames.forEach(name => names.add(name));
+
+  getBoundaryNameCandidates(hunt).forEach(name => names.add(name));
+
+  if (huntCode) {
+    try {
+      const url =
+        `${DWR_HUNT_INFO_TABLE}?` +
+        `where=${encodeURIComponent(`HUNT_NUMBER='${huntCode.replace(/'/g, "''")}'`)}` +
+        '&outFields=BOUNDARY_NAME,BOUNDARYID' +
+        '&returnGeometry=false' +
+        '&f=json';
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Hunt info table query failed: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const features = Array.isArray(payload?.features) ? payload.features : [];
+
+      features.forEach(feature => {
+        const attrs = feature?.attributes || {};
+        const boundaryName = safe(attrs.BOUNDARY_NAME).trim();
+        const boundaryId = safe(attrs.BOUNDARYID).trim();
+        if (boundaryName) names.add(boundaryName);
+        if (boundaryId) ids.add(boundaryId);
+      });
+    } catch (err) {
+      console.warn('Hunt info table lookup failed, using local boundary name matching only.', err);
+    }
+  }
+
+  return { names, ids };
 }
 
 async function zoomToSelectedBoundary() {
@@ -729,7 +766,7 @@ async function zoomToSelectedBoundary() {
     if (token !== boundaryZoomToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
-console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
+    console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
     if (!where || where === '1=0') {
       map.setView([39.3, -111.7], 7);
       return;
