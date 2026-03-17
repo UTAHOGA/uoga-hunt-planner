@@ -23,8 +23,9 @@ const outfitters = [
   }
 ];
 
-const DWR_MAPSERVER = 'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer';
-const DWR_HUNT_TABLE = `${DWR_MAPSERVER}/1`;
+const DWR_MAPSERVER = 'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
+const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
+const DWR_HUNT_NUMBER_TO_BOUNDARIES = 'https://dwrapps.utah.gov/huntboundary/HuntNumberToBoundaries';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -134,6 +135,35 @@ function getUsfsLabel(properties) {
     p.LABEL,
     'US Forest Service Unit'
   );
+}
+
+function getBlmLabel(properties) {
+  const p = properties || {};
+  return firstNonEmpty(
+    p.ADMU_NAME,
+    p.PARENT_NAME,
+    p.ADM_UNIT_CD,
+    p.ADMIN_UNIT,
+    p.FIELD_OFFICE,
+    p.NAME,
+    'BLM Utah Administrative Unit'
+  );
+}
+
+function getFieldPreview(properties, preferredKeys = []) {
+  const p = properties || {};
+  const keys = Object.keys(p);
+  if (!keys.length) return '';
+
+  const ordered = [
+    ...preferredKeys.filter(key => key in p),
+    ...keys.filter(key => !preferredKeys.includes(key))
+  ];
+
+  return ordered
+    .slice(0, 6)
+    .map(key => `${key}: ${safe(p[key]).trim() || '[blank]'}`)
+    .join(' | ');
 }
 
 function createDiamondIcon() {
@@ -261,17 +291,6 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
-
-map.createPane('blmPane');
-map.getPane('blmPane').style.zIndex = 430;
-map.createPane('usfsPane');
-map.getPane('usfsPane').style.zIndex = 440;
-map.createPane('huntPane');
-map.getPane('huntPane').style.zIndex = 350;
-map.createPane('selectedHuntPane');
-map.getPane('selectedHuntPane').style.zIndex = 450;
-
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -285,6 +304,17 @@ function getHuntBoundaryStyle() {
 
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
+
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+map.createPane('blmPane');
+map.getPane('blmPane').style.zIndex = 430;
+map.createPane('usfsPane');
+map.getPane('usfsPane').style.zIndex = 440;
+map.createPane('huntPane');
+map.getPane('huntPane').style.zIndex = 350;
+map.createPane('selectedHuntPane');
+map.getPane('selectedHuntPane').style.zIndex = 450;
 
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -324,6 +354,22 @@ let huntResultsLimit = 100;
 let liveFilterToken = 0;
 let boundaryZoomToken = 0;
 let suppressNextMapClickInfo = false;
+let overlayPrioritySource = '';
+let overlayPriorityUntil = 0;
+
+function setOverlayPriority(source, evt) {
+  overlayPrioritySource = source;
+  overlayPriorityUntil = Date.now() + 300;
+  suppressNextMapClickInfo = true;
+
+  if (evt?.originalEvent) {
+    L.DomEvent.stopPropagation(evt.originalEvent);
+  }
+}
+
+function shouldYieldToOverlay(source) {
+  return overlayPriorityUntil > Date.now() && overlayPrioritySource && overlayPrioritySource !== source;
+}
 
 async function loadHuntData() {
   const res = await fetch('./data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json', { cache: 'no-store' });
@@ -448,21 +494,13 @@ function buildLiveHuntUnitsLayer() {
     try { map.removeLayer(liveHuntUnitsLayer); } catch (e) {}
   }
 
-  const fallback = () => {
-    liveHuntUnitsLayer = null;
-    liveLayerSource = 'none';
-    console.error('DWR hunt layer unavailable; fallback disabled to avoid incorrect nationwide polygons.');
-  };
-
   try {
-    liveHuntUnitsLayer = L.esri.dynamicMapLayer({
-      url: DWR_MAPSERVER,
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: DWR_HUNT_BOUNDARY_LAYER,
       pane: 'huntPane',
-      layers: [0],
-      opacity: 0.75,
-      transparent: true
+      style: () => getHuntBoundaryStyle()
     });
-    liveLayerSource = 'dwr-dynamic';
+    liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
       liveHuntUnitsLayer = null;
@@ -472,7 +510,8 @@ function buildLiveHuntUnitsLayer() {
     if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
   } catch (e) {
     console.error('DWR hunt layer setup failed:', e);
-    fallback();
+    liveHuntUnitsLayer = null;
+    liveLayerSource = 'none';
   }
 }
 
@@ -497,11 +536,11 @@ function buildUSFSLayer() {
   });
 
   usfsDistrictLayer.on('click', evt => {
-    suppressNextMapClickInfo = true;
+    setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
     if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}`;
+      clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`;
     }
   });
 
@@ -523,15 +562,16 @@ function buildBLMLayer() {
 
   blmDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
-    return `<b>BLM Utah</b><br>${escapeHtml(firstNonEmpty(p.ADMIN_UNIT, p.FIELD_OFFICE, p.NAME, 'Administrative Unit'))}`;
+    return `<b>BLM Utah</b><br>${escapeHtml(getBlmLabel(p))}`;
   });
 
   blmDistrictLayer.on('click', evt => {
-    suppressNextMapClickInfo = true;
+    if (shouldYieldToOverlay('blm')) return;
+    setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
-    const unit = firstNonEmpty(p.ADMIN_UNIT, p.FIELD_OFFICE, p.NAME, 'BLM Utah Administrative Unit');
+    const unit = getBlmLabel(p);
     if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}`;
+      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'BLM_ORG_TYPE', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
     }
   });
 
@@ -539,7 +579,8 @@ function buildBLMLayer() {
 }
 
 function applyLiveBoundaryWhere(whereClause) {
-  return whereClause;
+  if (!liveHuntUnitsLayer || typeof liveHuntUnitsLayer.setWhere !== 'function') return;
+  liveHuntUnitsLayer.setWhere(whereClause || '1=1');
 }
 
 function clearSelectedBoundaryLayer() {
@@ -554,7 +595,7 @@ async function renderSelectedBoundaryOnly(whereClause) {
   if (!whereClause || whereClause === '1=0') return;
 
   const url =
-    `${DWR_MAPSERVER}/0/query?` +
+    `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
     `where=${encodeURIComponent(whereClause)}` +
     '&outFields=*' +
     '&returnGeometry=true' +
@@ -588,29 +629,26 @@ function chunk(items, size) {
 }
 
 async function queryBoundaryNamesAndIds(huntCodes) {
-  const names = new Set();
   const ids = new Set();
-  const chunks = chunk(huntCodes, 80);
+  const chunks = chunk(huntCodes, 1);
 
   for (const pack of chunks) {
-    const sql = pack.map(c => `'${safe(c).replace(/'/g, "''")}'`).join(',');
-    const where = `HUNT_NUMBER IN (${sql})`;
-    const url = `${DWR_HUNT_TABLE}/query?where=${encodeURIComponent(where)}&outFields=BOUNDARY_NAME,BOUNDARYID&returnDistinctValues=true&f=json`;
+    const huntCode = safe(pack[0]).trim();
+    if (!huntCode) continue;
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`DWR table query failed: ${res.status}`);
+    const url = `${DWR_HUNT_NUMBER_TO_BOUNDARIES}?HN=${encodeURIComponent(huntCode)}`;
+    const res = await fetch(url, { credentials: 'omit' });
+    if (!res.ok) throw new Error(`HuntNumberToBoundaries query failed: ${res.status}`);
     const data = await res.json();
-    const features = Array.isArray(data.features) ? data.features : [];
+    const values = Array.isArray(data) ? data : [];
 
-    features.forEach(f => {
-      const n = safe(f?.attributes?.BOUNDARY_NAME).trim();
-      const i = safe(f?.attributes?.BOUNDARYID).trim();
-      if (n) names.add(n);
+    values.forEach(v => {
+      const i = safe(v).trim();
       if (i) ids.add(i);
     });
   }
 
-  return { names, ids };
+  return { names: new Set(), ids };
 }
 
 async function zoomToSelectedBoundary() {
@@ -638,7 +676,7 @@ async function zoomToSelectedBoundary() {
     }
 
     const url =
-      `${DWR_MAPSERVER}/0/query?` +
+      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
       `where=${encodeURIComponent(where)}` +
       '&returnExtentOnly=true' +
       '&outSR=4326' +
@@ -690,7 +728,7 @@ function buildBoundaryFilterSql(names, ids) {
 
   if (names.size) {
     const list = Array.from(names).map(n => `'${safe(n).replace(/'/g, "''")}'`).join(',');
-    clauses.push(`BOUNDARY_NAME IN (${list})`);
+    clauses.push(`Boundary_Name IN (${list})`);
   }
 
   if (ids.size) {
@@ -708,11 +746,12 @@ function buildBoundaryFilterSql(names, ids) {
 async function refreshLiveBoundaryFilter() {
   const token = ++liveFilterToken;
 
-  if (!liveHuntUnitsLayer) return;
-
   if (!selectedHunt) {
     clearSelectedBoundaryLayer();
-    if (toggleLiveUnits?.checked && !map.hasLayer(liveHuntUnitsLayer)) {
+    if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) {
+      buildLiveHuntUnitsLayer();
+    }
+    if (toggleLiveUnits?.checked && liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) {
       liveHuntUnitsLayer.addTo(map);
     }
     applyLiveBoundaryWhere('1=1');
@@ -736,14 +775,21 @@ async function refreshLiveBoundaryFilter() {
       return;
     }
 
-    if (map.hasLayer(liveHuntUnitsLayer)) {
+    if (toggleLiveUnits?.checked) {
+      if (!liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
+      if (liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) liveHuntUnitsLayer.addTo(map);
+      applyLiveBoundaryWhere('1=0');
+    } else if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
       map.removeLayer(liveHuntUnitsLayer);
     }
     await renderSelectedBoundaryOnly(where);
   } catch (err) {
     console.error('Boundary filter failed:', err);
     clearSelectedBoundaryLayer();
-    if (toggleLiveUnits?.checked && !map.hasLayer(liveHuntUnitsLayer)) {
+    if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) {
+      buildLiveHuntUnitsLayer();
+    }
+    if (toggleLiveUnits?.checked && liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) {
       liveHuntUnitsLayer.addTo(map);
     }
     applyLiveBoundaryWhere('1=1');
@@ -1056,6 +1102,7 @@ if (basemapSelect) {
     });
     (basemaps[basemapSelect.value] || basemaps.osm).addTo(map);
 
+    if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
     if (toggleLiveUnits?.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
     if (toggleUSFS?.checked && usfsDistrictLayer) usfsDistrictLayer.addTo(map);
     if (toggleBLM?.checked && blmDistrictLayer) blmDistrictLayer.addTo(map);
@@ -1070,12 +1117,14 @@ if (basemapSelect) {
 
 if (toggleLiveUnits) {
   toggleLiveUnits.addEventListener('change', () => {
-    if (!liveHuntUnitsLayer) return;
     if (toggleLiveUnits.checked) {
-      liveHuntUnitsLayer.addTo(map);
+      if (!liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
+      if (liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
       refreshLiveBoundaryFilter();
     } else {
-      map.removeLayer(liveHuntUnitsLayer);
+      if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
+        map.removeLayer(liveHuntUnitsLayer);
+      }
     }
   });
 }
@@ -1184,6 +1233,9 @@ map.on('click', e => {
 });
 
 map.on('zoomend', () => {
+  if (liveHuntUnitsLayer && typeof liveHuntUnitsLayer.setStyle === 'function') {
+    liveHuntUnitsLayer.setStyle(() => getHuntBoundaryStyle());
+  }
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
     selectedBoundaryLayer.setStyle({
       color: '#1d3f91',
