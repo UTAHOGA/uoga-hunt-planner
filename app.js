@@ -658,21 +658,23 @@ async function renderSelectedBoundaryOnly(whereClause) {
     throw new Error(`Selected boundary query failed: ${response.status}`);
   }
 
-  const geojson = await response.json();
-  const features = Array.isArray(geojson?.features) ? geojson.features : [];
-  if (!features.length) return false;
+ const geojson = await response.json();
+const features = Array.isArray(geojson?.features) ? geojson.features : [];
+console.log('selected boundary feature count', features.length);
+if (!features.length) return false;
 
-  selectedBoundaryLayer = L.geoJSON(geojson, {
-    pane: 'selectedHuntPane',
-    style: () => ({
-      color: '#1d3f91',
-      weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
-      fillColor: '#9cb4f2',
-      fillOpacity: 0.22
-    })
-  }).addTo(map);
+selectedBoundaryLayer = L.geoJSON(geojson, {
+  pane: 'selectedHuntPane',
+  style: () => ({
+    color: '#1d3f91',
+    weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
+    fillColor: '#9cb4f2',
+    fillOpacity: 0.22
+  })
+}).addTo(map);
 
-  return true;
+console.log('selected boundary added');
+return true;
 }
 function chunk(items, size) {
   const out = [];
