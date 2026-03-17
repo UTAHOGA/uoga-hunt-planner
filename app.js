@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-16-01';
+const APP_BUILD = 'build-2026-03-17-01';
 
 const outfitters = [
   {
@@ -65,6 +65,14 @@ const HUNT_DATA_SOURCES = [
     candidates: [
       './data/Utah_Hunt_Planner_Master_SpikeElk.json',
       './data/Utah_Hunt_Planner_Master_SpikeElk.json.json'
+    ]
+  },
+  {
+    label: 'Special Elk',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_SpecialElk.json',
+      './data/Utah_Hunt_Planner_Master_SpecialElk.json.json'
     ]
   }
 ];
@@ -312,10 +320,15 @@ function getHuntType(h) {
 }
 
 function getHuntCategory(h) {
+  const tagged = firstNonEmpty(h.huntCategory, h.HuntCategory, h.hunt_category);
+  if (tagged) return tagged;
+
   const species = getSpeciesList(h).map(s => s.toLowerCase());
   const title = getHuntTitle(h).toLowerCase();
   const huntType = getHuntType(h).toLowerCase();
 
+  if (title.includes('private-lands-only') || title.includes('private lands only')) return 'Private Land Only';
+  if (title.includes('extended archery')) return 'Extended Archery';
   if (title.includes('spike')) return 'Spike Only';
   if (huntType.includes('youth') || title.includes('youth')) return 'Youth';
   if (huntType.includes('limited')) return 'Limited Entry';
@@ -549,12 +562,15 @@ async function loadHuntData() {
   }
 
   const deduped = [];
-  const seenCodes = new Set();
+  const seenKeys = new Set();
   merged.forEach(record => {
     const code = safe(getHuntCode(record)).trim();
-    const key = code || JSON.stringify(record);
-    if (seenCodes.has(key)) return;
-    seenCodes.add(key);
+    const unit = safe(getUnitCode(record) || getUnitName(record)).trim();
+    const weapon = safe(getWeapon(record)).trim();
+    const dates = safe(getDates(record)).trim();
+    const key = [code, unit, weapon, dates].join('||') || JSON.stringify(record);
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
     deduped.push(record);
   });
 
