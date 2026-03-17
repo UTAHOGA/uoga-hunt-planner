@@ -5,7 +5,6 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-16-01';
 
 const outfitters = [
   {
@@ -140,7 +139,7 @@ function getUsfsLabel(properties) {
 
 function getBlmLabel(properties) {
   const p = properties || {};
-  const label = firstNonEmpty(
+  return firstNonEmpty(
     p.ADMU_NAME,
     p.ADMU_DISPLAY_NAME,
     p.ADMIN_ST_NAME,
@@ -153,12 +152,6 @@ function getBlmLabel(properties) {
     p.NAME,
     'BLM Utah Administrative Unit'
   );
-
-  return label
-    .replace(/\s+field\s+office$/i, ' District')
-    .replace(/\s+district\s+office$/i, ' District')
-    .replace(/\s+office$/i, '')
-    .trim();
 }
 
 function getFieldPreview(properties, preferredKeys = []) {
@@ -328,7 +321,7 @@ map.createPane('selectedHuntPane');
 map.getPane('selectedHuntPane').style.zIndex = 450;
 
 const basemaps = {
-  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap'
   }),
@@ -393,12 +386,6 @@ async function loadHuntData() {
   else huntData = [];
 
   if (!huntData.length) throw new Error('No hunt records found in JSON.');
-}
-
-function setBuildMarker() {
-  if (selectedMeta && !selectedHunt) {
-    selectedMeta.textContent = `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`;
-  }
 }
 
 function getFilteredHunts() {
@@ -512,11 +499,11 @@ function buildLiveHuntUnitsLayer() {
   }
 
   try {
-      liveHuntUnitsLayer = L.esri.featureLayer({
-        url: DWR_HUNT_BOUNDARY_LAYER,
-        pane: 'huntPane',
-        style: () => getHuntBoundaryStyle()
-      });
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: DWR_HUNT_BOUNDARY_LAYER,
+      pane: 'huntPane',
+      style: () => getHuntBoundaryStyle()
+    });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
@@ -556,8 +543,6 @@ function buildUSFSLayer() {
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
-    const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    evt.layer.bindPopup(`<b>${escapeHtml(forest)}</b><br>${escapeHtml(office)}`).openPopup();
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`;
     }
@@ -589,7 +574,6 @@ function buildBLMLayer() {
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
-    evt.layer.bindPopup(`<b>BLM Utah</b><br>${escapeHtml(unit)}`).openPopup();
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
     }
@@ -614,25 +598,32 @@ async function renderSelectedBoundaryOnly(whereClause) {
 
   if (!whereClause || whereClause === '1=0') return;
 
-  if (!window.L || !window.L.esri) return;
+  const url =
+    `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+    `where=${encodeURIComponent(whereClause)}` +
+    '&outFields=*' +
+    '&returnGeometry=true' +
+    '&outSR=4326' +
+    '&f=geojson';
 
-  selectedBoundaryLayer = L.esri.featureLayer({
-    url: DWR_HUNT_BOUNDARY_LAYER,
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Selected boundary query failed: ${response.status}`);
+  }
+
+  const geojson = await response.json();
+  const features = Array.isArray(geojson?.features) ? geojson.features : [];
+  if (!features.length) return;
+
+  selectedBoundaryLayer = L.geoJSON(geojson, {
     pane: 'selectedHuntPane',
-    where: whereClause,
     style: () => ({
       color: '#1d3f91',
       weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
       fillColor: '#9cb4f2',
       fillOpacity: 0.18
     })
-  });
-
-  selectedBoundaryLayer.on('error', err => {
-    console.error('Selected boundary layer failed:', err);
-  });
-
-  selectedBoundaryLayer.addTo(map);
+  }).addTo(map);
 }
 
 function chunk(items, size) {
@@ -641,58 +632,14 @@ function chunk(items, size) {
   return out;
 }
 
-function titleCaseWords(value) {
-  return safe(value)
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-}
-
-function getBoundaryNameCandidates(hunt) {
-  const names = new Set();
-  const unitName = safe(getUnitName(hunt)).trim();
-  const unitCode = safe(getUnitCode(hunt)).trim();
-
-  function addNameVariants(value) {
-    const base = safe(value).trim();
-    if (!base) return;
-    names.add(base);
-    names.add(titleCaseWords(base));
-    names.add(base.toUpperCase());
-  }
-
-  if (unitName) {
-    addNameVariants(unitName);
-    addNameVariants(unitName.replace(/\s*\/\s*/g, '/'));
-    addNameVariants(unitName.replace(/\s*\/\s*/g, ', '));
-    addNameVariants(unitName.replace(/\s*\/\s*/g, ' '));
-  }
-
-  if (unitCode) {
-    const codeName = titleCaseWords(unitCode.replace(/-/g, ' '));
-    if (codeName) {
-      addNameVariants(codeName);
-      addNameVariants(codeName.replace(/\s+East$/i, ', East'));
-      addNameVariants(codeName.replace(/\s+West$/i, ', West'));
-      addNameVariants(codeName.replace(/\s+North$/i, ', North'));
-      addNameVariants(codeName.replace(/\s+South$/i, ', South'));
-    }
-  }
-
-  return new Set(Array.from(names).filter(Boolean));
-}
-
-async function queryBoundaryNamesAndIds(hunt) {
+async function queryBoundaryNamesAndIds(huntCodes) {
   const ids = new Set();
-  const names = getBoundaryNameCandidates(hunt);
-  const huntCode = safe(getHuntCode(hunt)).trim();
+  const chunks = chunk(huntCodes, 1);
 
-  if (!huntCode) {
-    return { names, ids };
-  }
+  for (const pack of chunks) {
+    const huntCode = safe(pack[0]).trim();
+    if (!huntCode) continue;
 
-  try {
     const url = `${DWR_HUNT_NUMBER_TO_BOUNDARIES}?HN=${encodeURIComponent(huntCode)}`;
     const res = await fetch(url, { credentials: 'omit' });
     if (!res.ok) throw new Error(`HuntNumberToBoundaries query failed: ${res.status}`);
@@ -703,11 +650,9 @@ async function queryBoundaryNamesAndIds(hunt) {
       const i = safe(v).trim();
       if (i) ids.add(i);
     });
-  } catch (err) {
-    console.warn('Boundary ID lookup failed, using unit-name fallback.', err);
   }
 
-  return { names, ids };
+  return { names: new Set(), ids };
 }
 
 async function zoomToSelectedBoundary() {
@@ -725,7 +670,7 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
+    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
     if (token !== boundaryZoomToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
@@ -734,10 +679,10 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-      const url =
-        `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-        `where=${encodeURIComponent(where)}` +
-        '&returnExtentOnly=true' +
+    const url =
+      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+      `where=${encodeURIComponent(where)}` +
+      '&returnExtentOnly=true' +
       '&outSR=4326' +
       '&f=json';
 
@@ -786,9 +731,7 @@ function buildBoundaryFilterSql(names, ids) {
   const clauses = [];
 
   if (names.size) {
-    const list = Array.from(names)
-      .map(n => `'${safe(n).trim().replace(/'/g, "''")}'`)
-      .join(',');
+    const list = Array.from(names).map(n => `'${safe(n).replace(/'/g, "''")}'`).join(',');
     clauses.push(`Boundary_Name IN (${list})`);
   }
 
@@ -826,7 +769,7 @@ async function refreshLiveBoundaryFilter() {
       return;
     }
 
-    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
+    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
     if (token !== liveFilterToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
@@ -1110,7 +1053,7 @@ function resetPlanner() {
   populateUnits();
 
   if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
-  setBuildMarker();
+  if (selectedMeta) selectedMeta.textContent = 'Choose filters or click a hunt unit to load hunt and outfitter results.';
 
   map.setView([39.3, -111.7], 6);
 
@@ -1143,7 +1086,7 @@ if (unitFilter) {
       selectedHunt = null;
       selectedUnit = null;
       if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
-      setBuildMarker();
+      if (selectedMeta) selectedMeta.textContent = 'Choose filters or click a hunt unit to load hunt and outfitter results.';
       renderAreaInfo();
       renderOutfitters();
       renderOutfitterResults();
@@ -1311,7 +1254,6 @@ map.on('zoomend', () => {
   try {
     if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Loading...</option>';
     if (unitFilter) unitFilter.innerHTML = '<option value="">Loading...</option>';
-    setBuildMarker();
 
     await loadHuntData();
 
@@ -1346,7 +1288,6 @@ map.on('zoomend', () => {
     if (areaInfoEl) {
       areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
     }
-    setBuildMarker();
     window.setTimeout(() => map.invalidateSize(), 0);
   }
 })();
