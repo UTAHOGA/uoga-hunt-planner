@@ -304,7 +304,7 @@
       margin: 2px 0 0;
       font-size: 18px;
       line-height: 1.1;
-      color: var(--muted);
+      color: var(--text);
       text-align: center;
     }
 
@@ -327,6 +327,19 @@
       color: #f4d56f;
       border: 2px solid #d8b24a;
       box-shadow: 0 8px 22px rgba(50, 29, 14, .34);
+    }
+
+    .leaflet-popup.usfs-sign-popup .leaflet-popup-close-button,
+    .leaflet-popup.blm-sign-popup .leaflet-popup-close-button {
+      color: #f7de86;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 6px 8px 0 0;
+    }
+
+    .leaflet-popup.usfs-sign-popup .leaflet-popup-close-button:hover,
+    .leaflet-popup.blm-sign-popup .leaflet-popup-close-button:hover {
+      color: #fff3bf;
     }
 
     .leaflet-popup.usfs-sign-popup .leaflet-popup-content,
@@ -362,6 +375,38 @@
       margin-top: 6px;
       font-size: 12px;
       line-height: 1.2;
+      color: #f3df97;
+    }
+
+    .land-logo-popup {
+      min-width: 180px;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .land-logo-popup .agency-logo {
+      max-width: 88px;
+      max-height: 88px;
+      width: auto;
+      height: auto;
+      margin: 0 auto 8px;
+      display: block;
+      filter: drop-shadow(0 4px 10px rgba(34,20,10,.22));
+    }
+
+    .land-logo-popup .agency-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #ffe08a;
+      text-shadow: 0 1px 0 rgba(0,0,0,.2);
+    }
+
+    .land-logo-popup .agency-subtitle {
+      margin-top: 5px;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
       color: #f3df97;
     }
 
@@ -796,13 +841,13 @@
             <label for="weaponFilter">Weapon type (optional)</label>
             <select id="weaponFilter" class="hunt-select">
               <option value="All">All</option>
+              <option value="Any Legal Weapon">Any Legal Weapon</option>
               <option value="Archery">Archery</option>
               <option value="Extended Archery">Extended Archery</option>
               <option value="Restricted Archery">Restricted Archery</option>
               <option value="Muzzleloader">Muzzleloader</option>
               <option value="Restricted Muzzleloader">Restricted Muzzleloader</option>
               <option value="Restricted Rifle">Restricted Rifle</option>
-              <option value="Any Legal Weapon">Any Legal Weapon</option>
               <option value="HAMSS">HAMSS</option>
               <option value="Multiseason">Multiseason</option>
               <option value="Restricted Multiseason">Restricted Multiseason</option>
@@ -814,6 +859,9 @@
             <select id="basemapSelect" class="hunt-select">
               <option value="osm">OpenStreetMap</option>
               <option value="topo">Terrain</option>
+              <option value="natgeo">National Geographic</option>
+              <option value="usgs">USGS Topo</option>
+              <option value="light">Light Gray</option>
               <option value="sat">Satellite</option>
             </select>
           </div>
