@@ -21,15 +21,15 @@ const outfitters = [
     city: 'Manti',
     unitsServed: 'beaver-east,fishlake,manti-san-rafael,monroe,fillmore,nebo',
     forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
-  }const DWR_MAPSERVER = 'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
+  }
+];
+const DWR_MAPSERVER =
+  'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const UNIT_CENTER_LOOKUP = {
-];
-
-
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
-  'cache': [41.78, -111.62],
+  cache: [41.78, -111.62],
   'chalk-creek-east': [40.88, -111.07],
   'diamond-mountain': [40.42, -109.18],
   'fillmore-oak-creek': [38.95, -112.33],
@@ -44,7 +44,6 @@ const UNIT_CENTER_LOOKUP = {
   'south-slope-vernal': [40.46, -109.56],
   'west-desert-south': [38.78, -113.42]
 };
-
 const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1503: ['Manti, San Rafael'],
   DB1533: ['Manti, San Rafael'],
@@ -53,7 +52,8 @@ const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1510: ['Monroe'],
   DB1540: ['Monroe'],
   DB1506: ['Fillmore'],
-  DB1536: ['Fillmore']};
+  DB1536: ['Fillmore']
+};
 
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
