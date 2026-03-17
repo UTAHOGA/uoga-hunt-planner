@@ -666,7 +666,6 @@ async function renderSelectedBoundaryOnly(whereClause) {
 
   return true;
 }
-}
 
 function chunk(items, size) {
   const out = [];
