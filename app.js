@@ -889,7 +889,7 @@ async function refreshLiveBoundaryFilter() {
     applyLiveBoundaryWhere('1=1');
   }
 }
-
+  
 function renderOwnershipPlaceholders() {
   sitlaLayer.clearLayers();
   stateLayer.clearLayers();
