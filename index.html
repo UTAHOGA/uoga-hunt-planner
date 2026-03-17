@@ -728,7 +728,7 @@
     @media (max-width: 860px) {
       .app {
         grid-template-columns: 1fr;
-        grid-template-rows: auto 55vh auto auto;
+        grid-template-rows: auto 52vh auto auto;
         height: auto;
       }
 
@@ -736,16 +736,60 @@
         border: none;
       }
 
+      .panel-inner {
+        padding: 12px;
+      }
+
+      .field {
+        margin-bottom: 8px;
+      }
+
+      input[type="text"], select {
+        height: 38px;
+        font-size: 14px;
+      }
+
+      button {
+        min-height: 40px;
+      }
+
       #map-wrap {
         position: relative;
-        height: 55vh;
-        min-height: 55vh;
+        height: 52vh;
+        min-height: 52vh;
       }
 
       .map-overlay {
         top: 10px;
         left: 10px;
         right: 10px;
+        gap: 8px;
+      }
+
+      .map-overlay-left {
+        max-width: min(100%, 360px);
+      }
+
+      .overlay-card {
+        max-width: 100%;
+        padding: 8px 10px;
+      }
+
+      .map-brand {
+        min-width: 0;
+        gap: 8px;
+      }
+
+      .map-brand img {
+        width: 56px;
+      }
+
+      .map-brand h2 {
+        font-size: 15px;
+      }
+
+      .map-brand p {
+        font-size: 14px;
       }
 
       .results {
@@ -753,16 +797,129 @@
         max-height: none;
         border-top: 1px solid var(--line);
         border-radius: 0;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        box-shadow: none;
+      }
+
+      .results-heading {
+        padding: 10px 12px;
+      }
+
+      .results-columns {
+        display: none;
       }
 
       .outfitters-panel {
         border-top: 1px solid var(--line);
       }
 
-      .results-columns,
-      .table-like .result-card,
       .results-secondary {
         grid-template-columns: 1fr;
+      }
+
+      .table-like .result-card {
+        display: block;
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .table-like .result-card > div,
+      .table-like .pill-row,
+      .table-like .meta {
+        display: block;
+      }
+
+      .table-like .result-card h3 {
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      .table-like .pill {
+        display: inline-block;
+        margin: 0 8px 8px 0;
+        padding: 4px 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #f1e8da;
+        font-size: 11px;
+      }
+
+      .table-like .meta {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .table-like .result-actions {
+        justify-content: stretch;
+      }
+
+      .table-like .result-actions .btn-primary,
+      .table-like .result-actions .btn-secondary {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .unit-chip {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .unit-chip button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .brand h1 {
+        font-size: 24px;
+      }
+
+      #map-wrap {
+        height: 48vh;
+        min-height: 48vh;
+      }
+
+      .map-overlay {
+        left: 8px;
+        right: 8px;
+        top: 8px;
+      }
+
+      .map-overlay-left {
+        max-width: 100%;
+      }
+
+      .map-brand {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .map-brand img {
+        width: 48px;
+      }
+
+      .map-brand h2 {
+        font-size: 14px;
+      }
+
+      .map-brand p {
+        font-size: 12px;
+      }
+
+      .overlay-card h2 {
+        font-size: 13px;
+      }
+
+      .overlay-card p {
+        font-size: 10px;
       }
     }
   </style>
