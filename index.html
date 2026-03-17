@@ -13,8 +13,8 @@
       --panel: rgba(255, 252, 246, 0.95);
       --panel2: #fffdf8;
       --line: #caa98b;
-      --text: #473526;
-      --muted: #826d5b;
+      --text: #2f2118;
+      --muted: #5f4a39;
       --accent: #ba622d;
       --accent2: #d08d4f;
       --ok: #5f8f5a;
@@ -61,33 +61,16 @@
     .panel-inner { padding: 10px; }
 
     .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      display: block;
+      text-align: center;
       margin-bottom: 10px;
       padding: 6px 8px 10px;
     }
 
-    .brand-logo {
-      width: 66px;
-      height: 66px;
-      border-radius: 50%;
-      object-fit: cover;
-      display: block;
-      border: 2px solid rgba(186, 98, 45, 0.38);
-      box-shadow: 0 6px 14px rgba(78, 57, 33, .18);
-    }
-
     .brand h1 {
       margin: 0;
-      font-size: 24px;
-      line-height: 1.02;
-    }
-
-    .brand p {
-      margin: 4px 0 0;
-      color: var(--muted);
-      font-size: 11px;
+      font-size: 29px;
+      line-height: 1.04;
     }
 
     .section-title {
@@ -333,7 +316,53 @@
     }
 
     #map-wrap.terrain-boost .leaflet-tile-pane {
-      filter: saturate(1.18) contrast(1.12) brightness(1.03);
+      filter: saturate(1.22) contrast(1.2) brightness(1.04);
+    }
+
+    .leaflet-popup.usfs-sign-popup .leaflet-popup-content-wrapper,
+    .leaflet-popup.usfs-sign-popup .leaflet-popup-tip,
+    .leaflet-popup.blm-sign-popup .leaflet-popup-content-wrapper,
+    .leaflet-popup.blm-sign-popup .leaflet-popup-tip {
+      background: linear-gradient(180deg, #7b4a23, #5c3418);
+      color: #f4d56f;
+      border: 2px solid #d8b24a;
+      box-shadow: 0 8px 22px rgba(50, 29, 14, .34);
+    }
+
+    .leaflet-popup.usfs-sign-popup .leaflet-popup-content,
+    .leaflet-popup.blm-sign-popup .leaflet-popup-content {
+      margin: 12px 14px;
+    }
+
+    .land-sign-popup {
+      min-width: 180px;
+      text-align: center;
+      font-family: Georgia, "Times New Roman", serif;
+      letter-spacing: .01em;
+    }
+
+    .land-sign-popup .sign-agency {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #f3df97;
+      margin-bottom: 6px;
+    }
+
+    .land-sign-popup .sign-title {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #ffe08a;
+      text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    }
+
+    .land-sign-popup .sign-subtitle {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.2;
+      color: #f3df97;
     }
 
     .result-card {
@@ -492,7 +521,7 @@
 
     .table-like .result-card {
       display: grid;
-      grid-template-columns: 1.3fr 0.9fr 0.8fr 0.9fr 1fr 1.2fr auto;
+      grid-template-columns: 1.15fr 1fr 0.9fr 0.8fr 0.9fr 1fr 1.2fr auto;
       gap: 8px;
       align-items: start;
       padding: 6px 10px;
@@ -514,6 +543,11 @@
       font-size: 12px;
       margin: 0;
       font-weight: 700;
+      color: var(--text);
+    }
+
+    .table-like .result-card > div {
+      color: var(--text);
     }
 
     .table-like .pill-row {
@@ -556,13 +590,13 @@
 
     .results-columns {
       display: grid;
-      grid-template-columns: 1.3fr 0.9fr 0.8fr 0.9fr 1fr 1.2fr auto;
+      grid-template-columns: 1.15fr 1fr 0.9fr 0.8fr 0.9fr 1fr 1.2fr auto;
       gap: 8px;
       padding: 6px 10px;
       border-bottom: 1px solid var(--line);
       font-size: 11px;
       font-weight: 700;
-      color: var(--muted);
+      color: var(--text);
       background: rgba(226, 213, 193, .35);
     }
 
@@ -707,14 +741,8 @@
     <aside class="sidebar">
       <div class="panel-inner">
         <div class="brand">
-          <img
-            class="brand-logo"
-            src="https://static.wixstatic.com/media/43f827_24f00cd070494533955d4910eef3a2fb~mv2.jpg/v1/fill/w_207,h_105,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Group%20945%20(1).jpg"
-            alt="U.O.G.A. logo"
-          />
           <div>
             <h1>Utah Outfitter and Guide<br>Association</h1>
-            <p>Public hunt planning and vetted outfitter lookup</p>
           </div>
         </div>
 
@@ -794,7 +822,6 @@
         <div class="section-title">Add Map Data Layers</div>
         <div class="toggle-list">
           <div class="toggle"><span>Live Utah Hunt Units</span><input id="toggleLiveUnits" type="checkbox" checked /></div>
-          <div class="toggle"><span>Hunt Unit Centers</span><input id="toggleUnits" type="checkbox" checked /></div>
           <div class="toggle"><span>USFS Forests</span><input id="toggleUSFS" type="checkbox" checked /></div>
           <div class="toggle"><span>BLM Districts</span><input id="toggleBLM" type="checkbox" checked /></div>
           <div class="toggle"><span>SITLA</span><input id="toggleSITLA" type="checkbox" /></div>
@@ -851,6 +878,7 @@
         </div>
         <div class="results-columns">
           <span>Hunt Name</span>
+          <span>Unit</span>
           <span>Hunt Number</span>
           <span>Gender</span>
           <span>Species</span>
@@ -870,11 +898,6 @@
             <div>
               <div class="section-title">Map Click Info</div>
               <div id="clickInfo" class="empty" style="margin-bottom:12px;">Click the map to inspect the selected area.</div>
-            </div>
-
-            <div>
-              <div class="section-title">Matching Hunt Units</div>
-              <div id="unitResults" class="unit-list empty">Use the filters above to load matching hunt units.</div>
             </div>
           </div>
         </div>
