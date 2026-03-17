@@ -31,7 +31,7 @@ const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
 const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
 const USFS_LOGO_URL = 'https://static.wixstatic.com/media/43f827_d54826fa897541e6810ba74cc2fcf9d7~mv2.png';
-const BLM_LOGO_URL = 'https://static.wixstatic.com/media/43f827_09ff64b7e1a34f88816d85f3384b2b40~mv2.png';
+const BLM_LOGO_URL = 'https://static.wixstatic.com/media/43f827_612ebfea933a496784ac9e0ea3442f29~mv2.png';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -195,10 +195,20 @@ function getFieldPreview(properties, preferredKeys = []) {
     .join(' | ');
 }
 
-function buildLandSignPopup(agency, title, subtitle = '', logoUrl = '') {
+function buildUsfsSignPopup(title) {
   return `
     <div class="land-sign-popup">
-      <div class="sign-board" style="background-image:url('${escapeHtml(logoUrl)}')">
+      <div class="sign-board" style="background-image:url('${escapeHtml(USFS_LOGO_URL)}')">
+        <div class="sign-label">${escapeHtml(title)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function buildBlmSignPopup(title, subtitle = '') {
+  return `
+    <div class="land-sign-popup">
+      <div class="sign-board" style="background-image:url('${escapeHtml(BLM_LOGO_URL)}')">
         <div class="sign-label">${escapeHtml(title)}</div>
         ${subtitle ? `<div class="sign-subtitle">${escapeHtml(subtitle)}</div>` : ''}
       </div>
@@ -693,14 +703,14 @@ function buildUSFSLayer() {
   usfsDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
     const forest = getUsfsLabel(p);
-    return buildLandSignPopup('US Forest Service', forest, '', USFS_LOGO_URL);
+    return buildUsfsSignPopup(forest);
   }, { className: 'usfs-sign-popup' });
 
   usfsDistrictLayer.on('click', evt => {
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
-    evt.layer.bindPopup(buildLandSignPopup('US Forest Service', forest, '', USFS_LOGO_URL), {
+    evt.layer.bindPopup(buildUsfsSignPopup(forest), {
       className: 'usfs-sign-popup'
     }).openPopup();
     if (clickInfoEl) {
@@ -726,7 +736,7 @@ function buildBLMLayer() {
 
   blmDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
-    return buildLandSignPopup('Bureau of Land Management', getBlmLabel(p), 'Utah District', BLM_LOGO_URL);
+    return buildBlmSignPopup(getBlmLabel(p), 'Utah District');
   }, { className: 'blm-sign-popup' });
 
   blmDistrictLayer.on('click', evt => {
@@ -734,7 +744,7 @@ function buildBLMLayer() {
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
-    evt.layer.bindPopup(buildLandSignPopup('Bureau of Land Management', unit, 'Utah District', BLM_LOGO_URL), {
+    evt.layer.bindPopup(buildBlmSignPopup(unit, 'Utah District'), {
       className: 'blm-sign-popup'
     }).openPopup();
     if (clickInfoEl) {
@@ -1560,7 +1570,4 @@ map.on('zoomend', () => {
       unitResultsEl.className = 'unit-list empty';
       unitResultsEl.innerHTML = `Unable to load hunt units: ${escapeHtml(err.message || String(err))}`;
     }
-    setBuildMarker();
-    window.setTimeout(() => map.invalidateSize(), 0);
-  }
-})();
+    set
