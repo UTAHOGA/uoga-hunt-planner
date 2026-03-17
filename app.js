@@ -661,21 +661,29 @@ function getBoundaryNameCandidates(hunt) {
   const unitName = safe(getUnitName(hunt)).trim();
   const unitCode = safe(getUnitCode(hunt)).trim();
 
+  function addNameVariants(value) {
+    const base = safe(value).trim();
+    if (!base) return;
+    names.add(base);
+    names.add(titleCaseWords(base));
+    names.add(base.toUpperCase());
+  }
+
   if (unitName) {
-    names.add(unitName);
-    names.add(unitName.replace(/\s*\/\s*/g, '/'));
-    names.add(unitName.replace(/\s*\/\s*/g, ', '));
-    names.add(unitName.replace(/\s*\/\s*/g, ' '));
+    addNameVariants(unitName);
+    addNameVariants(unitName.replace(/\s*\/\s*/g, '/'));
+    addNameVariants(unitName.replace(/\s*\/\s*/g, ', '));
+    addNameVariants(unitName.replace(/\s*\/\s*/g, ' '));
   }
 
   if (unitCode) {
     const codeName = titleCaseWords(unitCode.replace(/-/g, ' '));
     if (codeName) {
-      names.add(codeName);
-      names.add(codeName.replace(/\s+East$/i, ', East'));
-      names.add(codeName.replace(/\s+West$/i, ', West'));
-      names.add(codeName.replace(/\s+North$/i, ', North'));
-      names.add(codeName.replace(/\s+South$/i, ', South'));
+      addNameVariants(codeName);
+      addNameVariants(codeName.replace(/\s+East$/i, ', East'));
+      addNameVariants(codeName.replace(/\s+West$/i, ', West'));
+      addNameVariants(codeName.replace(/\s+North$/i, ', North'));
+      addNameVariants(codeName.replace(/\s+South$/i, ', South'));
     }
   }
 
@@ -786,9 +794,9 @@ function buildBoundaryFilterSql(names, ids) {
 
   if (names.size) {
     const list = Array.from(names)
-      .map(n => `'${safe(n).trim().toUpperCase().replace(/'/g, "''")}'`)
+      .map(n => `'${safe(n).trim().replace(/'/g, "''")}'`)
       .join(',');
-    clauses.push(`UPPER(Boundary_Name) IN (${list})`);
+    clauses.push(`Boundary_Name IN (${list})`);
   }
 
   if (ids.size) {
