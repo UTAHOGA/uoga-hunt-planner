@@ -1570,4 +1570,7 @@ map.on('zoomend', () => {
       unitResultsEl.className = 'unit-list empty';
       unitResultsEl.innerHTML = `Unable to load hunt units: ${escapeHtml(err.message || String(err))}`;
     }
-    set
+    setBuildMarker();
+    window.setTimeout(() => map.invalidateSize(), 0);
+  }
+})();
