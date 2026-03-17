@@ -855,56 +855,37 @@ function buildBoundaryFilterSql(names, ids) {
 async function refreshLiveBoundaryFilter() {
   const token = ++liveFilterToken;
 
+  if (!toggleLiveUnits?.checked) {
+    clearSelectedBoundaryLayer();
+    if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
+      map.removeLayer(liveHuntUnitsLayer);
+    }
+    return;
+  }
+
+  if (!liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
+  if (liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) {
+    liveHuntUnitsLayer.addTo(map);
+  }
+
   if (!selectedHunt) {
     clearSelectedBoundaryLayer();
-    if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) {
-      buildLiveHuntUnitsLayer();
-    }
-    if (toggleLiveUnits?.checked && liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) {
-      liveHuntUnitsLayer.addTo(map);
-    }
     applyLiveBoundaryWhere('1=1');
     return;
   }
 
   try {
-    const huntCode = getHuntCode(selectedHunt);
-    if (!huntCode) {
-      applyLiveBoundaryWhere('1=1');
-      return;
-    }
-
     const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
-    if (!where || where === '1=0') {
-      clearSelectedBoundaryLayer();
-      applyLiveBoundaryWhere('1=1');
-      return;
-    }
+    console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
 
-    if (toggleLiveUnits?.checked) {
-      if (!liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
-      if (liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) liveHuntUnitsLayer.addTo(map);
-      applyLiveBoundaryWhere('1=1');
-    } else if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
-      map.removeLayer(liveHuntUnitsLayer);
-    }
-
-    const selectedRendered = await renderSelectedBoundaryOnly(where);
-    if (toggleLiveUnits?.checked && selectedRendered && selectedBoundaryLayer) {
-      applyLiveBoundaryWhere('1=0');
-    }
+    clearSelectedBoundaryLayer();
+    applyLiveBoundaryWhere(where && where !== '1=0' ? where : '1=1');
   } catch (err) {
     console.error('Boundary filter failed:', err);
     clearSelectedBoundaryLayer();
-    if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) {
-      buildLiveHuntUnitsLayer();
-    }
-    if (toggleLiveUnits?.checked && liveHuntUnitsLayer && !map.hasLayer(liveHuntUnitsLayer)) {
-      liveHuntUnitsLayer.addTo(map);
-    }
     applyLiveBoundaryWhere('1=1');
   }
 }
