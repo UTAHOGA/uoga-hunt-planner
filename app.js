@@ -261,17 +261,6 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
-
-map.createPane('blmPane');
-map.getPane('blmPane').style.zIndex = 410;
-map.createPane('usfsPane');
-map.getPane('usfsPane').style.zIndex = 420;
-map.createPane('huntPane');
-map.getPane('huntPane').style.zIndex = 430;
-map.createPane('selectedHuntPane');
-map.getPane('selectedHuntPane').style.zIndex = 440;
-
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -286,8 +275,19 @@ function getHuntBoundaryStyle() {
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
 
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+map.createPane('blmPane');
+map.getPane('blmPane').style.zIndex = 430;
+map.createPane('usfsPane');
+map.getPane('usfsPane').style.zIndex = 440;
+map.createPane('huntPane');
+map.getPane('huntPane').style.zIndex = 350;
+map.createPane('selectedHuntPane');
+map.getPane('selectedHuntPane').style.zIndex = 450;
+
 const basemaps = {
-  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png', {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap'
   }),
@@ -449,16 +449,9 @@ function buildLiveHuntUnitsLayer() {
   }
 
   const fallback = () => {
-    liveHuntUnitsLayer = L.esri.featureLayer({
-      url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
-      pane: 'huntPane',
-      style: () => getHuntBoundaryStyle()
-    });
-    liveLayerSource = 'fallback';
-    liveHuntUnitsLayer.on('error', err => {
-      console.error('Fallback hunt layer failed:', err);
-    });
-    if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
+    liveHuntUnitsLayer = null;
+    liveLayerSource = 'none';
+    console.error('DWR hunt layer unavailable; fallback disabled to avoid incorrect nationwide polygons.');
   };
 
   try {
