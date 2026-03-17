@@ -369,6 +369,7 @@ const outfitterLayer = L.layerGroup().addTo(map);
 const sitlaLayer = L.layerGroup().addTo(map);
 const stateLayer = L.layerGroup().addTo(map);
 const privateLayer = L.layerGroup().addTo(map);
+const utahOutlineLayer = L.layerGroup().addTo(map);
 
 let liveHuntUnitsLayer = null;
 let selectedBoundaryLayer = null;
@@ -440,6 +441,17 @@ function setBuildMarker() {
   if (selectedMeta && !selectedHunt) {
     selectedMeta.textContent = `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`;
   }
+}
+
+function hasActiveHuntFilters() {
+  return Boolean(
+    safe(searchInput?.value).trim() ||
+    safe(speciesFilter?.value) !== 'All Species' ||
+    safe(sexFilter?.value) !== 'All' ||
+    safe(weaponFilter?.value) !== 'All' ||
+    safe(huntTypeFilter?.value) !== 'All' ||
+    safe(unitFilter?.value).trim()
+  );
 }
 
 function getFilteredHunts() {
@@ -588,13 +600,13 @@ function renderLiveHuntUnitsFeatures(features) {
 }
 
 function shouldRenderAllBoundaries() {
-  return map.getZoom() >= 7;
+  return false;
 }
 
 function buildLiveHuntUnitsLayer() {
   const features = getBoundarySourceFeatures();
   if (!features.length) return;
-  renderLiveHuntUnitsFeatures(shouldRenderAllBoundaries() || selectedHunt ? features : []);
+  renderLiveHuntUnitsFeatures([]);
 }
 
 function buildUSFSLayer() {
@@ -670,7 +682,11 @@ function applyLiveBoundaryWhere(whereClause) {
   if (!allFeatures.length) return;
 
   if (!selectedHunt || !whereClause || whereClause === '1=1') {
-    renderLiveHuntUnitsFeatures(shouldRenderAllBoundaries() ? allFeatures : []);
+    if (hasActiveHuntFilters() && map.getZoom() >= 7) {
+      renderLiveHuntUnitsFeatures(allFeatures);
+    } else {
+      renderLiveHuntUnitsFeatures([]);
+    }
     return;
   }
 
@@ -688,6 +704,25 @@ function clearSelectedBoundaryLayer() {
 async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
   return true;
+}
+
+function renderUtahOutline() {
+  utahOutlineLayer.clearLayers();
+
+  const utahBounds = [
+    [37.0, -114.05],
+    [42.0, -114.05],
+    [42.0, -109.04],
+    [37.0, -109.04],
+    [37.0, -114.05]
+  ];
+
+  L.polygon(utahBounds, {
+    color: '#a36a2f',
+    weight: 2,
+    fill: false,
+    opacity: 0.85
+  }).addTo(utahOutlineLayer);
 }
 
 function chunk(items, size) {
@@ -1398,6 +1433,8 @@ map.on('zoomend', () => {
   try {
     if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Loading...</option>';
     if (unitFilter) unitFilter.innerHTML = '<option value="">Loading...</option>';
+    if (toggleUSFS) toggleUSFS.checked = false;
+    if (toggleBLM) toggleBLM.checked = false;
     setBuildMarker();
 
     await loadHuntData();
@@ -1412,6 +1449,7 @@ map.on('zoomend', () => {
 
     await refreshLiveBoundaryFilter();
 
+    renderUtahOutline();
     renderUnitCenters();
     renderOwnershipPlaceholders();
     renderAreaInfo();
