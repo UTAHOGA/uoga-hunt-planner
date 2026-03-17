@@ -390,9 +390,23 @@ function shouldYieldToOverlay(source) {
 }
 
 async function loadHuntData() {
-  const res = await fetch('./data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json', { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Failed to load hunt data: ${res.status}`);
-  const data = await res.json();
+  const candidates = [
+    './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json',
+    './data/Utah_Hunt_Planner_Master_BuckDeer_Pages_43_53.json.json'
+  ];
+
+  let data = null;
+  let lastStatus = 'not-started';
+
+  for (const url of candidates) {
+    const res = await fetch(url, { cache: 'no-store' });
+    lastStatus = res.status;
+    if (!res.ok) continue;
+    data = await res.json();
+    break;
+  }
+
+  if (!data) throw new Error(`Failed to load hunt data: ${lastStatus}`);
 
   if (Array.isArray(data)) huntData = data;
   else if (Array.isArray(data.records)) huntData = data.records;
