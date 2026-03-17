@@ -30,6 +30,8 @@ const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
 const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
+const USFS_LOGO_URL = 'https://www.fs.usda.gov/sites/default/files/urbanforestry/FS-Insignia.png';
+const BLM_LOGO_URL = 'https://www.blm.gov/sites/blm.gov/files/styles/social_media/public/docs/2021-02/blm_09tri_color.png';
 
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
@@ -193,6 +195,29 @@ function getFieldPreview(properties, preferredKeys = []) {
     .join(' | ');
 }
 
+function buildLandSignPopup(agency, title, subtitle = '') {
+  return `
+    <div class="land-sign-popup">
+      <div class="sign-agency">${escapeHtml(agency)}</div>
+      <div class="sign-title">${escapeHtml(title)}</div>
+      ${subtitle ? `<div class="sign-subtitle">${escapeHtml(subtitle)}</div>` : ''}
+    </div>
+  `;
+}
+
+function buildLandLogoPopup(kind, title, subtitle) {
+  const logoUrl = kind === 'usfs' ? USFS_LOGO_URL : BLM_LOGO_URL;
+  const subtitleText = kind === 'usfs' ? 'National Forest' : 'Public Lands';
+
+  return `
+    <div class="land-logo-popup">
+      <img class="agency-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(kind === 'usfs' ? 'US Forest Service logo' : 'Bureau of Land Management logo')}" />
+      <div class="agency-title">${escapeHtml(title)}</div>
+      <div class="agency-subtitle">${escapeHtml(subtitle || subtitleText)}</div>
+    </div>
+  `;
+}
+
 function createDiamondIcon() {
   return L.divIcon({
     className: 'hunt-center-icon',
@@ -334,7 +359,7 @@ function getHuntBoundaryStyle() {
 
 function updateMapAppearance() {
   if (!mapWrapEl || !basemapSelect) return;
-  mapWrapEl.classList.toggle('terrain-boost', basemapSelect.value === 'topo');
+  mapWrapEl.classList.toggle('terrain-boost', ['topo', 'natgeo', 'usgs'].includes(basemapSelect.value));
 }
 
 const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
@@ -361,6 +386,24 @@ const basemaps = {
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}',
       { maxZoom: 19, attribution: 'Labels &copy; Esri' }
+    )
+  ]),
+  natgeo: L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 16, attribution: 'Tiles &copy; Esri' }
+  ),
+  usgs: L.tileLayer(
+    'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
+  ),
+  light: L.layerGroup([
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 16, attribution: 'Tiles &copy; Esri' }
+    ),
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 16, attribution: 'Labels &copy; Esri' }
     )
   ]),
   sat: L.tileLayer(
@@ -582,6 +625,21 @@ function getBoundarySourceFeatures() {
   return Array.isArray(huntBoundaryData?.features) ? huntBoundaryData.features : [];
 }
 
+function canSelectBoundaryByDoubleClick() {
+  return !toggleUSFS?.checked && !toggleBLM?.checked;
+}
+
+function findMatchingHuntsForBoundaryFeature(feature) {
+  const featureId = getBoundaryFeatureId(feature);
+  const featureName = getBoundaryFeatureName(feature).trim().toLowerCase();
+  const candidates = getFilteredHunts();
+
+  return candidates.filter(hunt => {
+    const matchSets = buildBoundaryMatchSets(hunt);
+    return matchSets.names.has(featureName) || (featureId && matchSets.ids.has(featureId));
+  });
+}
+
 function renderLiveHuntUnitsFeatures(features) {
   if (!window.L) return;
 
@@ -598,7 +656,22 @@ function renderLiveHuntUnitsFeatures(features) {
     { type: 'FeatureCollection', features },
     {
       pane: 'huntPane',
-      style: () => getHuntBoundaryStyle()
+      style: () => getHuntBoundaryStyle(),
+      onEachFeature: (feature, layer) => {
+        layer.on('dblclick', evt => {
+          if (!canSelectBoundaryByDoubleClick()) return;
+          const matches = findMatchingHuntsForBoundaryFeature(feature);
+          if (!matches.length) return;
+
+          L.DomEvent.stopPropagation(evt);
+          if (evt.originalEvent) {
+            L.DomEvent.preventDefault(evt.originalEvent);
+            L.DomEvent.stopPropagation(evt.originalEvent);
+          }
+
+          selectHuntByCode(getHuntCode(matches[0]));
+        });
+      }
     }
   );
 
@@ -633,15 +706,17 @@ function buildUSFSLayer() {
     const p = layer.feature?.properties || {};
     const forest = getUsfsLabel(p);
     const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    return `<b>${escapeHtml(forest)}</b><br>${escapeHtml(office)}`;
-  });
+    return buildLandLogoPopup('usfs', forest, office);
+  }, { className: 'usfs-sign-popup' });
 
   usfsDistrictLayer.on('click', evt => {
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
     const office = firstNonEmpty(p.REGION, p.FORESTNUM, 'US Forest Service');
-    evt.layer.bindPopup(`<b>${escapeHtml(forest)}</b><br>${escapeHtml(office)}`).openPopup();
+    evt.layer.bindPopup(buildLandLogoPopup('usfs', forest, office), {
+      className: 'usfs-sign-popup'
+    }).openPopup();
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`;
     }
@@ -665,15 +740,17 @@ function buildBLMLayer() {
 
   blmDistrictLayer.bindPopup(layer => {
     const p = layer.feature?.properties || {};
-    return `<b>BLM Utah</b><br>${escapeHtml(getBlmLabel(p))}`;
-  });
+    return buildLandLogoPopup('blm', getBlmLabel(p), 'Utah District');
+  }, { className: 'blm-sign-popup' });
 
   blmDistrictLayer.on('click', evt => {
     if (shouldYieldToOverlay('blm')) return;
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
     const unit = getBlmLabel(p);
-    evt.layer.bindPopup(`<b>BLM Utah</b><br>${escapeHtml(unit)}`).openPopup();
+    evt.layer.bindPopup(buildLandLogoPopup('blm', unit, 'Utah District'), {
+      className: 'blm-sign-popup'
+    }).openPopup();
     if (clickInfoEl) {
       clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
     }
