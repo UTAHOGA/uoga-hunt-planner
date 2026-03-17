@@ -6,6 +6,7 @@ let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
 const APP_BUILD = 'build-2026-03-16-01';
+const APP_BUILD = 'build-2026-03-16-01';
 
 const outfitters = [
   {
@@ -26,7 +27,8 @@ const outfitters = [
 
 const DWR_MAPSERVER =
   'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
-const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
+
+conconst DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
 
@@ -58,8 +60,10 @@ const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1540: ['Monroe'],
   DB1506: ['Fillmore'],
   DB1536: ['Fillmore']
+};st DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
+const DWR_HUNT_INFO_TABLE =
+  'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
 };
-
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
 const sexFilter = document.getElementById('sexFilter');
@@ -539,11 +543,11 @@ function buildLiveHuntUnitsLayer() {
   }
 
   try {
-    liveHuntUnitsLayer = L.esri.featureLayer({
-      url: DWR_HUNT_BOUNDARY_LAYER,
-      pane: 'huntPane',
-      style: () => getHuntBoundaryStyle()
-    });
+      liveHuntUnitsLayer = L.esri.featureLayer({
+        url: DWR_HUNT_BOUNDARY_LAYER,
+        pane: 'huntPane',
+        style: () => getHuntBoundaryStyle()
+      });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
@@ -640,28 +644,36 @@ async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
 
   if (!whereClause || whereClause === '1=0') return false;
-  if (!window.L || !window.L.esri) return false;
 
-  selectedBoundaryLayer = L.esri.featureLayer({
-    url: DWR_HUNT_BOUNDARY_LAYER,
+  const url =
+    `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+    `where=${encodeURIComponent(whereClause)}` +
+    '&outFields=*' +
+    '&returnGeometry=true' +
+    '&outSR=4326' +
+    '&f=geojson';
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Selected boundary query failed: ${response.status}`);
+  }
+
+  const geojson = await response.json();
+  const features = Array.isArray(geojson?.features) ? geojson.features : [];
+  if (!features.length) return false;
+
+  selectedBoundaryLayer = L.geoJSON(geojson, {
     pane: 'selectedHuntPane',
-    where: whereClause,
     style: () => ({
       color: '#1d3f91',
       weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
       fillColor: '#9cb4f2',
-      fillOpacity: 0.18
+      fillOpacity: 0.22
     })
-  });
+  }).addTo(map);
 
-  selectedBoundaryLayer.on('error', err => {
-    console.error('Selected boundary layer failed:', err);
-  });
-
-  selectedBoundaryLayer.addTo(map);
   return true;
 }
-
 function chunk(items, size) {
   const out = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
@@ -772,16 +784,15 @@ async function zoomToSelectedBoundary() {
 
     const where = buildBoundaryFilterSql(names, ids);
     console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
-
     if (!where || where === '1=0') {
       map.setView([39.3, -111.7], 7);
       return;
     }
 
-    const url =
-      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-      `where=${encodeURIComponent(where)}` +
-      '&returnExtentOnly=true' +
+      const url =
+        `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+        `where=${encodeURIComponent(where)}` +
+        '&returnExtentOnly=true' +
       '&outSR=4326' +
       '&f=json';
 
@@ -887,7 +898,6 @@ async function refreshLiveBoundaryFilter() {
     } else if (liveHuntUnitsLayer && map.hasLayer(liveHuntUnitsLayer)) {
       map.removeLayer(liveHuntUnitsLayer);
     }
-
     const selectedRendered = await renderSelectedBoundaryOnly(where);
     if (toggleLiveUnits?.checked && selectedRendered && selectedBoundaryLayer) {
       applyLiveBoundaryWhere('1=0');
