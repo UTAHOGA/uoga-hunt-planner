@@ -29,7 +29,7 @@ const DWR_HUNT_TABLE = `${DWR_MAPSERVER}/1`;
 const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
-  'cache': [41.78, -111.62],
+  cache: [41.78, -111.62],
   'chalk-creek-east': [40.88, -111.07],
   'diamond-mountain': [40.42, -109.18],
   'fillmore-oak-creek': [38.95, -112.33],
@@ -246,6 +246,17 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+map.createPane('blmPane');
+map.getPane('blmPane').style.zIndex = 410;
+map.createPane('usfsPane');
+map.getPane('usfsPane').style.zIndex = 420;
+map.createPane('huntPane');
+map.getPane('huntPane').style.zIndex = 430;
+map.createPane('selectedHuntPane');
+map.getPane('selectedHuntPane').style.zIndex = 440;
+
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -259,8 +270,6 @@ function getHuntBoundaryStyle() {
 
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
-
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
 
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -427,6 +436,7 @@ function buildLiveHuntUnitsLayer() {
   const fallback = () => {
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: 'https://services.arcgis.com/ZzrwjTRez6FJiOq4/ArcGIS/rest/services/Hunting_Units/FeatureServer/0',
+      pane: 'huntPane',
       style: () => getHuntBoundaryStyle()
     });
     liveLayerSource = 'fallback';
@@ -439,6 +449,7 @@ function buildLiveHuntUnitsLayer() {
   try {
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: `${DWR_MAPSERVER}/0`,
+      pane: 'huntPane',
       style: () => getHuntBoundaryStyle()
     });
     liveLayerSource = 'dwr-feature';
@@ -463,6 +474,7 @@ function buildUSFSLayer() {
 
   usfsDistrictLayer = L.esri.featureLayer({
     url: 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/0',
+    pane: 'usfsPane',
     where: "FORESTNAME IN ('Ashley National Forest','Dixie National Forest','Fishlake National Forest','Manti-La Sal National Forest','Uinta-Wasatch-Cache National Forest')",
     style: () => ({ color: '#476f2d', weight: 2.5, fillOpacity: 0.02 })
   });
@@ -484,6 +496,7 @@ function buildUSFSLayer() {
   });
 
   if (toggleUSFS?.checked) usfsDistrictLayer.addTo(map);
+  if (typeof usfsDistrictLayer.bringToFront === 'function') usfsDistrictLayer.bringToFront();
 }
 
 function buildBLMLayer() {
@@ -494,6 +507,7 @@ function buildBLMLayer() {
 
   blmDistrictLayer = L.esri.featureLayer({
     url: 'https://gis.blm.gov/utarcgis/rest/services/AdminBoundaries/BLM_UT_ADMU/FeatureServer/0',
+    pane: 'blmPane',
     style: () => ({ color: '#b9722f', weight: 2.3, fillOpacity: 0.02 })
   });
 
@@ -556,6 +570,7 @@ async function renderSelectedBoundaryOnly(whereClause) {
   if (!features.length) return;
 
   selectedBoundaryLayer = L.geoJSON(geojson, {
+    pane: 'selectedHuntPane',
     style: () => ({
       color: '#1d3f91',
       weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
@@ -735,19 +750,33 @@ function renderOwnershipPlaceholders() {
   privateLayer.clearLayers();
 
   if (toggleSITLA?.checked) {
-    L.circleMarker([39.05, -111.9], { radius: 7, color: '#4f9d62', fillColor: '#4f9d62', fillOpacity: 0.35, weight: 2 })
-      .addTo(sitlaLayer)
-      .bindPopup('<b>SITLA</b><br>Placeholder layer');
+    L.circleMarker([39.05, -111.9], {
+      radius: 7,
+      color: '#4f9d62',
+      fillColor: '#4f9d62',
+      fillOpacity: 0.35,
+      weight: 2
+    }).addTo(sitlaLayer).bindPopup('<b>SITLA</b><br>Placeholder layer');
   }
+
   if (toggleState?.checked) {
-    L.circleMarker([40.1, -111.9], { radius: 7, color: '#2b8f9a', fillColor: '#2b8f9a', fillOpacity: 0.35, weight: 2 })
-      .addTo(stateLayer)
-      .bindPopup('<b>State Lands</b><br>Placeholder layer');
+    L.circleMarker([40.1, -111.9], {
+      radius: 7,
+      color: '#2b8f9a',
+      fillColor: '#2b8f9a',
+      fillOpacity: 0.35,
+      weight: 2
+    }).addTo(stateLayer).bindPopup('<b>State Lands</b><br>Placeholder layer');
   }
+
   if (togglePrivate?.checked) {
-    L.circleMarker([38.9, -111.2], { radius: 7, color: '#9a3e3e', fillColor: '#9a3e3e', fillOpacity: 0.35, weight: 2 })
-      .addTo(privateLayer)
-      .bindPopup('<b>Private Lands</b><br>Placeholder layer');
+    L.circleMarker([38.9, -111.2], {
+      radius: 7,
+      color: '#9a3e3e',
+      fillColor: '#9a3e3e',
+      fillOpacity: 0.35,
+      weight: 2
+    }).addTo(privateLayer).bindPopup('<b>Private Lands</b><br>Placeholder layer');
   }
 }
 
@@ -1038,6 +1067,12 @@ if (basemapSelect) {
     if (toggleLiveUnits?.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
     if (toggleUSFS?.checked && usfsDistrictLayer) usfsDistrictLayer.addTo(map);
     if (toggleBLM?.checked && blmDistrictLayer) blmDistrictLayer.addTo(map);
+    if (toggleUSFS?.checked && usfsDistrictLayer && typeof usfsDistrictLayer.bringToFront === 'function') {
+      usfsDistrictLayer.bringToFront();
+    }
+    if (selectedBoundaryLayer && typeof selectedBoundaryLayer.bringToFront === 'function') {
+      selectedBoundaryLayer.bringToFront();
+    }
   });
 }
 
@@ -1057,8 +1092,12 @@ if (toggleLiveUnits) {
 if (toggleUSFS) {
   toggleUSFS.addEventListener('change', () => {
     if (!usfsDistrictLayer) return;
-    if (toggleUSFS.checked) usfsDistrictLayer.addTo(map);
-    else map.removeLayer(usfsDistrictLayer);
+    if (toggleUSFS.checked) {
+      usfsDistrictLayer.addTo(map);
+      if (typeof usfsDistrictLayer.bringToFront === 'function') usfsDistrictLayer.bringToFront();
+    } else {
+      map.removeLayer(usfsDistrictLayer);
+    }
   });
 }
 
