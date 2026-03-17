@@ -68,6 +68,14 @@ const HUNT_DATA_SOURCES = [
     ]
   },
   {
+    label: 'Antlerless Elk',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_AntlerlessElk.json',
+      './data/Utah_Hunt_Planner_Master_AntlerlessElk.json.json'
+    ]
+  },
+  {
     label: 'Special Elk',
     required: false,
     candidates: [
@@ -327,6 +335,8 @@ function getHuntCategory(h) {
   const title = getHuntTitle(h).toLowerCase();
   const huntType = getHuntType(h).toLowerCase();
 
+  if (title.includes('antlerless elk-control') || title.includes('antlerless elk control')) return 'Antlerless Control';
+  if (title.includes('antlerless')) return 'Antlerless';
   if (title.includes('private-lands-only') || title.includes('private lands only')) return 'Private Land Only';
   if (title.includes('extended archery')) return 'Extended Archery';
   if (title.includes('spike')) return 'Spike Only';
@@ -568,7 +578,8 @@ async function loadHuntData() {
     const unit = safe(getUnitCode(record) || getUnitName(record)).trim();
     const weapon = safe(getWeapon(record)).trim();
     const dates = safe(getDates(record)).trim();
-    const key = [code, unit, weapon, dates].join('||') || JSON.stringify(record);
+    const boundaryId = safe(firstNonEmpty(record.boundaryId, record.BoundaryID, record.boundaryID)).trim();
+    const key = [code, unit, weapon, dates, boundaryId].join('||') || JSON.stringify(record);
     if (seenKeys.has(key)) return;
     seenKeys.add(key);
     deduped.push(record);
