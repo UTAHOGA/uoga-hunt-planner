@@ -261,6 +261,17 @@ function matchesFilter(selected, value) {
   return v.includes(s) || s.includes(v);
 }
 
+const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
+
+map.createPane('blmPane');
+map.getPane('blmPane').style.zIndex = 410;
+map.createPane('usfsPane');
+map.getPane('usfsPane').style.zIndex = 420;
+map.createPane('huntPane');
+map.getPane('huntPane').style.zIndex = 430;
+map.createPane('selectedHuntPane');
+map.getPane('selectedHuntPane').style.zIndex = 440;
+
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
 
@@ -275,19 +286,8 @@ function getHuntBoundaryStyle() {
   return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.42 };
 }
 
-const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
-
-map.createPane('blmPane');
-map.getPane('blmPane').style.zIndex = 410;
-map.createPane('usfsPane');
-map.getPane('usfsPane').style.zIndex = 420;
-map.createPane('huntPane');
-map.getPane('huntPane').style.zIndex = 430;
-map.createPane('selectedHuntPane');
-map.getPane('selectedHuntPane').style.zIndex = 440;
-
 const basemaps = {
-  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap'
   }),
@@ -462,7 +462,6 @@ function buildLiveHuntUnitsLayer() {
   };
 
   try {
-    // Use FeatureLayer so we can control line weight and fill directly.
     liveHuntUnitsLayer = L.esri.featureLayer({
       url: `${DWR_MAPSERVER}/0`,
       pane: 'huntPane',
