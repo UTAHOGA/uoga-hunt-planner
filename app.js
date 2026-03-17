@@ -648,14 +648,50 @@ function chunk(items, size) {
   return out;
 }
 
-async function queryBoundaryNamesAndIds(huntCodes) {
+function titleCaseWords(value) {
+  return safe(value)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function getBoundaryNameCandidates(hunt) {
+  const names = new Set();
+  const unitName = safe(getUnitName(hunt)).trim();
+  const unitCode = safe(getUnitCode(hunt)).trim();
+
+  if (unitName) {
+    names.add(unitName);
+    names.add(unitName.replace(/\s*\/\s*/g, '/'));
+    names.add(unitName.replace(/\s*\/\s*/g, ', '));
+    names.add(unitName.replace(/\s*\/\s*/g, ' '));
+  }
+
+  if (unitCode) {
+    const codeName = titleCaseWords(unitCode.replace(/-/g, ' '));
+    if (codeName) {
+      names.add(codeName);
+      names.add(codeName.replace(/\s+East$/i, ', East'));
+      names.add(codeName.replace(/\s+West$/i, ', West'));
+      names.add(codeName.replace(/\s+North$/i, ', North'));
+      names.add(codeName.replace(/\s+South$/i, ', South'));
+    }
+  }
+
+  return new Set(Array.from(names).filter(Boolean));
+}
+
+async function queryBoundaryNamesAndIds(hunt) {
   const ids = new Set();
-  const chunks = chunk(huntCodes, 1);
+  const names = getBoundaryNameCandidates(hunt);
+  const huntCode = safe(getHuntCode(hunt)).trim();
 
-  for (const pack of chunks) {
-    const huntCode = safe(pack[0]).trim();
-    if (!huntCode) continue;
+  if (!huntCode) {
+    return { names, ids };
+  }
 
+  try {
     const url = `${DWR_HUNT_NUMBER_TO_BOUNDARIES}?HN=${encodeURIComponent(huntCode)}`;
     const res = await fetch(url, { credentials: 'omit' });
     if (!res.ok) throw new Error(`HuntNumberToBoundaries query failed: ${res.status}`);
@@ -666,9 +702,11 @@ async function queryBoundaryNamesAndIds(huntCodes) {
       const i = safe(v).trim();
       if (i) ids.add(i);
     });
+  } catch (err) {
+    console.warn('Boundary ID lookup failed, using unit-name fallback.', err);
   }
 
-  return { names: new Set(), ids };
+  return { names, ids };
 }
 
 async function zoomToSelectedBoundary() {
@@ -686,7 +724,7 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
+    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== boundaryZoomToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
@@ -747,8 +785,10 @@ function buildBoundaryFilterSql(names, ids) {
   const clauses = [];
 
   if (names.size) {
-    const list = Array.from(names).map(n => `'${safe(n).replace(/'/g, "''")}'`).join(',');
-    clauses.push(`Boundary_Name IN (${list})`);
+    const list = Array.from(names)
+      .map(n => `'${safe(n).trim().toUpperCase().replace(/'/g, "''")}'`)
+      .join(',');
+    clauses.push(`UPPER(Boundary_Name) IN (${list})`);
   }
 
   if (ids.size) {
@@ -785,7 +825,7 @@ async function refreshLiveBoundaryFilter() {
       return;
     }
 
-    const { names, ids } = await queryBoundaryNamesAndIds([huntCode]);
+    const { names, ids } = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
