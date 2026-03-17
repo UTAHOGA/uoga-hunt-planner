@@ -341,6 +341,8 @@ function getHuntCategory(h) {
   if (title.includes('extended archery')) return 'Extended Archery';
   if (title.includes('spike')) return 'Spike Only';
   if (huntType.includes('youth') || title.includes('youth')) return 'Youth';
+  if (huntType.includes('once-in-a-lifetime') || huntType.includes('once in a lifetime')) return 'Once-in-a-Lifetime';
+  if (huntType.includes('premium limited')) return 'Premium Limited Entry';
   if (huntType.includes('limited')) return 'Limited Entry';
   if (species.includes('elk') && huntType.includes('general')) return 'General Bull';
   return getHuntType(h) || '';
