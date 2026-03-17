@@ -729,6 +729,7 @@ async function zoomToSelectedBoundary() {
     if (token !== boundaryZoomToken) return;
 
     const where = buildBoundaryFilterSql(names, ids);
+console.log('selected hunt', getHuntCode(selectedHunt), Array.from(names), Array.from(ids), where);
     if (!where || where === '1=0') {
       map.setView([39.3, -111.7], 7);
       return;
