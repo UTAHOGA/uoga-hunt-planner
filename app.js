@@ -26,7 +26,9 @@ const outfitters = [
 
 const DWR_MAPSERVER = 'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/HuntBoundary/HUNT_BOUNDARY_PROD/MapServer';
 const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
-const UNIT_CENTER_LOOKUP const UNIT_CENTER_LOOKUP = {
+const DWR_HUNT_INFO_TABLE =
+  'https://dwrmapserv.utah.gov/dwrarcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
+const UNIT_CENTER_LOOKUP = {
   'beaver-east': [38.28, -112.48],
   'book-cliffs': [39.72, -109.35],
   'cache': [41.78, -111.62],
@@ -54,6 +56,7 @@ const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1540: ['Monroe'],
   DB1506: ['Fillmore'],
   DB1536: ['Fillmore']
+};
 
 const searchInput = document.getElementById('searchInput');
 const speciesFilter = document.getElementById('speciesFilter');
@@ -375,6 +378,7 @@ let boundaryZoomToken = 0;
 let suppressNextMapClickInfo = false;
 let overlayPrioritySource = '';
 let overlayPriorityUntil = 0;
+Part 2
 
 function setOverlayPriority(source, evt) {
   overlayPrioritySource = source;
@@ -520,11 +524,11 @@ function buildLiveHuntUnitsLayer() {
   }
 
   try {
-      liveHuntUnitsLayer = L.esri.featureLayer({
-        url: DWR_HUNT_BOUNDARY_LAYER,
-        pane: 'huntPane',
-        style: () => getHuntBoundaryStyle()
-      });
+    liveHuntUnitsLayer = L.esri.featureLayer({
+      url: DWR_HUNT_BOUNDARY_LAYER,
+      pane: 'huntPane',
+      style: () => getHuntBoundaryStyle()
+    });
     liveLayerSource = 'dwr-feature';
     liveHuntUnitsLayer.on('error', err => {
       console.error('DWR hunt layer failed:', err);
@@ -690,10 +694,47 @@ function getBoundaryNameCandidates(hunt) {
 
   return new Set(Array.from(names).filter(Boolean));
 }
+Part 3
 
 async function queryBoundaryNamesAndIds(hunt) {
-  const names = getBoundaryNameCandidates(hunt);
-  return { names, ids: new Set() };
+  const huntCode = safe(getHuntCode(hunt)).trim();
+  const names = new Set();
+  const ids = new Set();
+
+  const overrideNames = HUNT_BOUNDARY_NAME_OVERRIDES[huntCode] || [];
+  overrideNames.forEach(name => names.add(name));
+
+  getBoundaryNameCandidates(hunt).forEach(name => names.add(name));
+
+  if (huntCode) {
+    try {
+      const url =
+        `${DWR_HUNT_INFO_TABLE}?` +
+        `where=${encodeURIComponent(`HUNT_NUMBER='${huntCode.replace(/'/g, "''")}'`)}` +
+        '&outFields=BOUNDARY_NAME,BOUNDARYID' +
+        '&returnGeometry=false' +
+        '&f=json';
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Hunt info table query failed: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const features = Array.isArray(payload?.features) ? payload.features : [];
+      features.forEach(feature => {
+        const attrs = feature?.attributes || {};
+        const boundaryName = safe(attrs.BOUNDARY_NAME).trim();
+        const boundaryId = safe(attrs.BOUNDARYID).trim();
+        if (boundaryName) names.add(boundaryName);
+        if (boundaryId) ids.add(boundaryId);
+      });
+    } catch (err) {
+      console.warn('Hunt info table lookup failed, using local boundary name matching only.', err);
+    }
+  }
+
+  return { names, ids };
 }
 
 async function zoomToSelectedBoundary() {
@@ -720,10 +761,10 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-      const url =
-        `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
-        `where=${encodeURIComponent(where)}` +
-        '&returnExtentOnly=true' +
+    const url =
+      `${DWR_HUNT_BOUNDARY_LAYER}/query?` +
+      `where=${encodeURIComponent(where)}` +
+      '&returnExtentOnly=true' +
       '&outSR=4326' +
       '&f=json';
 
@@ -1012,6 +1053,7 @@ function renderOutfitterResults() {
     resultsEl.innerHTML = `<div class="empty">No outfitters currently loaded for ${escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt))}.</div>`;
     return;
   }
+Part 4
 
   resultsEl.innerHTML = matches.map(o => `
     <div class="result-card">
