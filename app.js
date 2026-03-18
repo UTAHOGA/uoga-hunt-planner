@@ -42,6 +42,22 @@ const HUNT_DATA_SOURCES = [
     ]
   },
   {
+    label: 'Pronghorn',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_Pronghorn.json',
+      './data/Utah_Hunt_Planner_Master_Pronghorn.json.json'
+    ]
+  },
+  {
+    label: 'Moose',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_Moose.json',
+      './data/Utah_Hunt_Planner_Master_Moose.json.json'
+    ]
+  },
+  {
     label: 'Bull Elk',
     required: false,
     candidates: [
@@ -144,10 +160,15 @@ const selectedMeta = document.getElementById('selectedMeta');
 const selectedTitleMobile = document.getElementById('selectedTitleMobile');
 const selectedMetaMobile = document.getElementById('selectedMetaMobile');
 const huntResultsEl = document.getElementById('huntResults');
+const huntResultsMobileEl = document.getElementById('huntResultsMobile');
 const resultsEl = document.getElementById('results');
+const resultsMobileEl = document.getElementById('resultsMobile');
 const areaInfoEl = document.getElementById('areaInfo');
+const areaInfoMobileEl = document.getElementById('areaInfoMobile');
 const clickInfoEl = document.getElementById('clickInfo');
+const clickInfoMobileEl = document.getElementById('clickInfoMobile');
 const huntCountEl = document.getElementById('huntCount');
+const huntCountMobileEl = document.getElementById('huntCountMobile');
 const unitResultsEl = document.getElementById('unitResults');
 const resultsTrayEl = document.querySelector('.results');
 const toggleResultsTrayBtn = document.getElementById('toggleResultsTray');
@@ -204,6 +225,50 @@ function setSelectedDisplay(title, meta) {
   if (selectedMeta) selectedMeta.textContent = resolvedMeta;
   if (selectedTitleMobile) selectedTitleMobile.textContent = resolvedTitle;
   if (selectedMetaMobile) selectedMetaMobile.textContent = resolvedMeta;
+}
+
+function setHtml(targets, html) {
+  targets.filter(Boolean).forEach(el => {
+    el.innerHTML = html;
+  });
+}
+
+function setText(targets, value) {
+  targets.filter(Boolean).forEach(el => {
+    el.textContent = value;
+  });
+}
+
+function attachHuntResultsInteraction(container) {
+  if (!container) return;
+  container.addEventListener('click', e => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const actionEl = target.closest('[data-action]');
+    if (actionEl) {
+      const action = actionEl.getAttribute('data-action');
+      if (action === 'select-hunt') {
+        const code = actionEl.getAttribute('data-hunt-code');
+        if (code) selectHuntByCode(code);
+      }
+      if (action === 'show-more-hunts') {
+        huntResultsLimit += 100;
+        renderHuntResults();
+      }
+      return;
+    }
+
+    const card = target.closest('.result-card');
+    if (!card) return;
+    const button = card.querySelector('[data-hunt-code]');
+    const code = button?.getAttribute('data-hunt-code');
+    if (code) selectHuntByCode(code);
+  });
+}
+
+function setClickInfoHtml(html) {
+  setHtml([clickInfoEl, clickInfoMobileEl], html);
 }
 
 function getUsfsLabel(properties) {
@@ -455,7 +520,7 @@ function getHuntBoundaryStyle() {
 
 function updateMapAppearance() {
   if (!mapWrapEl || !basemapSelect) return;
-  mapWrapEl.classList.toggle('terrain-boost', ['topo', 'natgeo', 'usgs'].includes(basemapSelect.value));
+  mapWrapEl.classList.toggle('terrain-boost', ['topo', 'outdoor', 'natgeo', 'usgs'].includes(basemapSelect.value));
 }
 
 const map = L.map('map', { zoomControl: true }).setView([39.3, -111.7], 6);
@@ -488,10 +553,32 @@ const basemaps = {
     'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 16, attribution: 'Tiles &copy; Esri' }
   ),
+  outdoor: L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
+  ),
   usgs: L.tileLayer(
     'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
   ),
+  positron: L.layerGroup([
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      {
+        maxZoom: 20,
+        subdomains: 'abcd',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      }
+    ),
+    L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',
+      {
+        maxZoom: 20,
+        subdomains: 'abcd',
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      }
+    )
+  ]),
   light: L.layerGroup([
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
@@ -849,9 +936,7 @@ function buildUSFSLayer() {
     evt.layer.bindPopup(buildUsfsSignPopup(forest), {
       className: 'usfs-sign-popup'
     }).openPopup();
-    if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`;
-    }
+    setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
   });
 
   if (toggleUSFS?.checked) usfsDistrictLayer.addTo(map);
@@ -883,9 +968,7 @@ function buildBLMLayer() {
     evt.layer.bindPopup(buildBlmSignPopup(unit, 'Utah District'), {
       className: 'blm-sign-popup'
     }).openPopup();
-    if (clickInfoEl) {
-      clickInfoEl.innerHTML = `<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`;
-    }
+    setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
   });
 
   if (toggleBLM?.checked) blmDistrictLayer.addTo(map);
@@ -1278,15 +1361,15 @@ function renderUnitResults() {
 }
 
 function renderHuntResults() {
-  if (!huntResultsEl) return;
+  if (!huntResultsEl && !huntResultsMobileEl) return;
   const filtered = getFilteredHunts();
   const total = filtered.length;
   const shown = Math.min(huntResultsLimit, total);
 
-  if (huntCountEl) huntCountEl.textContent = String(total);
+  setText([huntCountEl, huntCountMobileEl], String(total));
 
   if (!total) {
-    huntResultsEl.innerHTML = '<div class="empty">No hunts match the current filters.</div>';
+    setHtml([huntResultsEl, huntResultsMobileEl], '<div class="empty">No hunts match the current filters.</div>');
     return;
   }
 
@@ -1316,18 +1399,21 @@ function renderHuntResults() {
     ? `<div class="result-actions"><button type="button" class="btn-secondary" data-action="show-more-hunts">Show more hunts (${shown} of ${total})</button></div>`
     : '';
 
-  huntResultsEl.innerHTML = `${html}<div class="result-meta-row">Showing ${shown} of ${total} matching hunts.</div>${more}`;
+  setHtml(
+    [huntResultsEl, huntResultsMobileEl],
+    `${html}<div class="result-meta-row">Showing ${shown} of ${total} matching hunts.</div>${more}`
+  );
 }
 
 function renderAreaInfo() {
-  if (!areaInfoEl) return;
+  if (!areaInfoEl && !areaInfoMobileEl) return;
 
   if (!selectedHunt) {
-    areaInfoEl.innerHTML = 'Click a hunt unit or select one from the filter.';
+    setHtml([areaInfoEl, areaInfoMobileEl], 'Click a hunt unit or select one from the filter.');
     return;
   }
 
-  areaInfoEl.innerHTML = `
+  setHtml([areaInfoEl, areaInfoMobileEl], `
     <strong>Hunt:</strong> ${escapeHtml(getHuntTitle(selectedHunt) || getHuntCode(selectedHunt))}<br>
     <strong>Unit:</strong> ${escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt))}<br>
     <strong>Species:</strong> ${escapeHtml(getSpeciesRaw(selectedHunt))}<br>
@@ -1336,7 +1422,7 @@ function renderAreaInfo() {
     <strong>Hunt Type:</strong> ${escapeHtml(getHuntType(selectedHunt))}<br>
     <strong>Dates:</strong> ${escapeHtml(getDates(selectedHunt))}
     ${getProvisionalNote(selectedHunt) ? `<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getProvisionalNote(selectedHunt))}</span>` : ''}
-  `;
+  `);
 }
 
 function renderOutfitters() {
@@ -1361,20 +1447,23 @@ function renderOutfitters() {
 }
 
 function renderOutfitterResults() {
-  if (!resultsEl) return;
+  if (!resultsEl && !resultsMobileEl) return;
 
   if (!selectedHunt) {
-    resultsEl.innerHTML = '<div class="empty">Select a hunt or unit to load outfitter results.</div>';
+    setHtml([resultsEl, resultsMobileEl], '<div class="empty">Select a hunt or unit to load outfitter results.</div>');
     return;
   }
 
   const matches = getSelectedOutfitters();
   if (!matches.length) {
-    resultsEl.innerHTML = `<div class="empty">No outfitters currently loaded for ${escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt))}.</div>`;
+    setHtml(
+      [resultsEl, resultsMobileEl],
+      `<div class="empty">No outfitters currently loaded for ${escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt))}.</div>`
+    );
     return;
   }
 
-  resultsEl.innerHTML = matches.map(o => `
+  setHtml([resultsEl, resultsMobileEl], matches.map(o => `
     <div class="result-card">
       <h3>${escapeHtml(o.listingName)}</h3>
       <div class="pill-row">
@@ -1393,7 +1482,7 @@ function renderOutfitterResults() {
         </a>
       </div>
     </div>
-  `).join('');
+  `).join(''));
 }
 
 function selectUnitByValue(unitValue) {
@@ -1606,39 +1695,8 @@ if (toggleResultsTrayBtn && resultsTrayEl) {
   });
 }
 
-if (huntResultsEl) {
-  huntResultsEl.addEventListener('click', e => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-
-    const row = target.closest('.result-card');
-    if (row && row instanceof HTMLElement) {
-      const rowBtn = row.querySelector('button[data-action="select-hunt"]');
-      if (rowBtn instanceof HTMLElement && !target.closest('button')) {
-        const rowHuntCode = safe(rowBtn.getAttribute('data-hunt-code')).trim();
-        if (rowHuntCode) {
-          selectHuntByCode(rowHuntCode);
-          return;
-        }
-      }
-    }
-
-    const btn = target.closest('button[data-action]');
-    if (!btn) return;
-
-    const action = btn.dataset.action;
-    if (action === 'select-hunt') {
-      const huntCode = safe(btn.dataset.huntCode).trim();
-      if (huntCode) selectHuntByCode(huntCode);
-      return;
-    }
-
-    if (action === 'show-more-hunts') {
-      huntResultsLimit += 100;
-      renderHuntResults();
-    }
-  });
-}
+attachHuntResultsInteraction(huntResultsEl);
+attachHuntResultsInteraction(huntResultsMobileEl);
 
 document.addEventListener('click', e => {
   const target = e.target;
@@ -1654,8 +1712,7 @@ map.on('click', e => {
     suppressNextMapClickInfo = false;
     return;
   }
-  if (!clickInfoEl) return;
-  clickInfoEl.innerHTML = `<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+  setClickInfoHtml(`<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
 });
 
 map.on('zoomend', () => {
@@ -1705,15 +1762,9 @@ map.on('zoomend', () => {
     if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
     if (unitFilter) unitFilter.innerHTML = '<option value="">Load Failed</option>';
 
-    if (huntResultsEl) {
-      huntResultsEl.innerHTML = `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`;
-    }
-    if (resultsEl) {
-      resultsEl.innerHTML = `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`;
-    }
-    if (areaInfoEl) {
-      areaInfoEl.innerHTML = 'App failed to initialize. Open browser console for details.';
-    }
+    setHtml([huntResultsEl, huntResultsMobileEl], `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`);
+    setHtml([resultsEl, resultsMobileEl], `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`);
+    setHtml([areaInfoEl, areaInfoMobileEl], 'App failed to initialize. Open browser console for details.');
     if (unitResultsEl) {
       unitResultsEl.className = 'unit-list empty';
       unitResultsEl.innerHTML = `Unable to load hunt units: ${escapeHtml(err.message || String(err))}`;
