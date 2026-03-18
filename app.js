@@ -58,6 +58,22 @@ const HUNT_DATA_SOURCES = [
     ]
   },
   {
+    label: 'Bighorn Sheep',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_BighornSheep.json',
+      './data/Utah_Hunt_Planner_Master_BighornSheep.json.json'
+    ]
+  },
+  {
+    label: 'Mountain Goat',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_MountainGoat.json',
+      './data/Utah_Hunt_Planner_Master_MountainGoat.json.json'
+    ]
+  },
+  {
     label: 'Bull Elk',
     required: false,
     candidates: [
