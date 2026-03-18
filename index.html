@@ -229,6 +229,16 @@
       overflow: hidden;
     }
 
+    #map-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 140ms ease;
+      z-index: 340;
+    }
+
     #map {
       position: absolute;
       inset: 0;
@@ -316,7 +326,15 @@
     }
 
     #map-wrap.terrain-boost .leaflet-tile-pane {
-      filter: saturate(1.22) contrast(1.2) brightness(1.04);
+      filter: sepia(0.42) saturate(1.05) hue-rotate(-10deg) contrast(1.06) brightness(0.96);
+    }
+
+    #map-wrap.terrain-boost::after {
+      opacity: 1;
+      background:
+        linear-gradient(rgba(214, 195, 156, 0.20), rgba(214, 195, 156, 0.20)),
+        linear-gradient(rgba(245, 236, 214, 0.22), rgba(245, 236, 214, 0.22));
+      mix-blend-mode: multiply;
     }
 
     .leaflet-popup.usfs-sign-popup .leaflet-popup-content-wrapper,
@@ -716,6 +734,11 @@
       line-height: 1.45;
     }
 
+    .mobile-sections {
+      display: none;
+      margin-top: 10px;
+    }
+
     @media (max-width: 1200px) {
       .app {
         grid-template-columns: 300px 1fr;
@@ -896,6 +919,15 @@
       .mobile-selected {
         display: block;
       }
+
+      .mobile-sections {
+        display: block;
+      }
+
+      .results,
+      .outfitters-panel {
+        display: none;
+      }
     }
 
     @media (max-width: 560px) {
@@ -1037,10 +1069,12 @@
             <select id="basemapSelect" class="hunt-select">
               <option value="osm">OpenStreetMap</option>
               <option value="topo">Terrain</option>
+              <option value="outdoor">ArcGIS Outdoor</option>
               <option value="natgeo">National Geographic</option>
               <option value="usgs">USGS Topo</option>
+              <option value="positron">CARTO Positron</option>
               <option value="light">Light Gray</option>
-              <option value="sat">Satellite</option>
+              <option value="sat">ArcGIS Imagery</option>
             </select>
           </div>
         </div>
@@ -1077,6 +1111,23 @@
             <strong id="selectedTitleMobile">No hunt selected</strong><br>
             <span id="selectedMetaMobile">Choose filters or click a hunt unit to load hunt and outfitter results.</span>
           </div>
+        </div>
+
+        <div class="mobile-sections">
+          <div class="section-title section-title-row">
+            <span>Matching Hunts</span>
+            <span id="huntCountMobile" class="count-chip">0</span>
+          </div>
+          <div id="huntResultsMobile" class="empty table-like" style="margin-bottom:12px;">No hunt data loaded yet.</div>
+
+          <div class="section-title">Selected Area</div>
+          <div id="areaInfoMobile" class="empty" style="margin-bottom:12px;">Click a hunt unit or select one from the filter.</div>
+
+          <div class="section-title">Map Click Info</div>
+          <div id="clickInfoMobile" class="empty" style="margin-bottom:12px;">Click the map to inspect the selected area.</div>
+
+          <div class="section-title">Vetted Outfitters</div>
+          <div id="resultsMobile" class="empty">Select a hunt or unit to load outfitter results.</div>
         </div>
       </div>
     </aside>
