@@ -694,6 +694,28 @@
       margin-top: 0;
     }
 
+    .mobile-selected {
+      display: none;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel2);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+    }
+
+    .mobile-selected strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .mobile-selected span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     @media (max-width: 1200px) {
       .app {
         grid-template-columns: 300px 1fr;
@@ -760,24 +782,19 @@
       }
 
       .map-overlay {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        gap: 8px;
-      }
-
-      .map-overlay-left {
-        max-width: min(100%, 360px);
+        display: none;
       }
 
       .overlay-card {
         max-width: 100%;
         padding: 8px 10px;
+        width: 100%;
       }
 
       .map-brand {
         min-width: 0;
         gap: 8px;
+        width: 100%;
       }
 
       .map-brand img {
@@ -875,9 +892,32 @@
       .unit-chip button {
         width: 100%;
       }
+
+      .mobile-selected {
+        display: block;
+      }
     }
 
     @media (max-width: 560px) {
+      html, body {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      .app,
+      .sidebar,
+      #map-wrap,
+      .results,
+      .outfitters-panel {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      .panel-inner {
+        padding: 10px;
+      }
+
       .brand h1 {
         font-size: 24px;
       }
@@ -888,38 +928,18 @@
       }
 
       .map-overlay {
-        left: 8px;
-        right: 8px;
-        top: 8px;
+        display: none;
       }
 
-      .map-overlay-left {
+      .result-card,
+      .table-like .result-card,
+      .unit-chip,
+      .toggle,
+      .field-stack,
+      input[type="text"],
+      select,
+      button {
         max-width: 100%;
-      }
-
-      .map-brand {
-        flex-direction: row;
-        align-items: center;
-      }
-
-      .map-brand img {
-        width: 48px;
-      }
-
-      .map-brand h2 {
-        font-size: 14px;
-      }
-
-      .map-brand p {
-        font-size: 12px;
-      }
-
-      .overlay-card h2 {
-        font-size: 13px;
-      }
-
-      .overlay-card p {
-        font-size: 10px;
       }
     }
   </style>
@@ -1049,6 +1069,14 @@
 
         <div class="small-note">
           Live now: Utah hunt-unit polygons, USFS districts, BLM districts, Utah ownership overlays, and vetted outfitter layer. Hunt records should load from your JSON file in the data folder through app.js.
+        </div>
+
+        <div class="mobile-selected">
+          <div class="section-title">Selected Hunt</div>
+          <div class="empty" style="margin-top:6px;">
+            <strong id="selectedTitleMobile">No hunt selected</strong><br>
+            <span id="selectedMetaMobile">Choose filters or click a hunt unit to load hunt and outfitter results.</span>
+          </div>
         </div>
       </div>
     </aside>
