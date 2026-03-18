@@ -74,6 +74,22 @@ const HUNT_DATA_SOURCES = [
     ]
   },
   {
+    label: 'Bison',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_Bison.json',
+      './data/Utah_Hunt_Planner_Master_Bison.json.json'
+    ]
+  },
+  {
+    label: 'Black Bear',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_BlackBear.json',
+      './data/Utah_Hunt_Planner_Master_BlackBear.json.json'
+    ]
+  },
+  {
     label: 'Bull Elk',
     required: false,
     candidates: [
@@ -135,6 +151,35 @@ const UNIT_CENTER_LOOKUP = {
   'south-slope-vernal': [40.46, -109.56],
   'west-desert-south': [38.78, -113.42]
 };
+
+const HUNT_TYPE_ORDER = [
+  'General',
+  'Youth',
+  'Limited Entry',
+  'Premium Limited Entry',
+  'Management',
+  'Dedicated Hunter',
+  'Cactus Buck',
+  'Once-in-a-Lifetime',
+  'Antlerless'
+];
+
+const HUNT_CATEGORY_ORDER = [
+  'Mature Bull',
+  'General Bull',
+  'Spike Only',
+  'Youth',
+  'Extended Archery',
+  'Private Land Only',
+  'Antlerless',
+  'Pronghorn',
+  'Moose',
+  'Rocky Mountain Bighorn',
+  'Desert Bighorn',
+  'Mountain Goat',
+  'Bison',
+  'Statewide Permit'
+];
 
 const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1503: ['Manti, San Rafael'],
@@ -800,6 +845,48 @@ function populateSpecies() {
     .join('');
 
   speciesFilter.value = options.includes(previous) ? previous : 'All Species';
+}
+
+function sortWithPreferredOrder(values, preferredOrder) {
+  const rank = new Map(preferredOrder.map((value, index) => [value, index]));
+  return values.sort((a, b) => {
+    const aRank = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
+    const bRank = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.localeCompare(b);
+  });
+}
+
+function getHuntTypeLabel(value) {
+  return value === 'General' ? 'General Season' : value;
+}
+
+function populateHuntTypes() {
+  if (!huntTypeFilter) return;
+  const previous = huntTypeFilter.value || 'All';
+  const values = Array.from(new Set(huntData.map(h => safe(getHuntType(h)).trim()).filter(Boolean)));
+  sortWithPreferredOrder(values, HUNT_TYPE_ORDER);
+
+  huntTypeFilter.innerHTML = [
+    '<option value="All">All</option>',
+    ...values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(getHuntTypeLabel(value))}</option>`)
+  ].join('');
+
+  huntTypeFilter.value = values.includes(previous) ? previous : 'All';
+}
+
+function populateHuntCategories() {
+  if (!huntCategoryFilter) return;
+  const previous = huntCategoryFilter.value || 'All';
+  const values = Array.from(new Set(huntData.map(h => safe(getHuntCategory(h)).trim()).filter(Boolean)));
+  sortWithPreferredOrder(values, HUNT_CATEGORY_ORDER);
+
+  huntCategoryFilter.innerHTML = [
+    '<option value="All">All</option>',
+    ...values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
+  ].join('');
+
+  huntCategoryFilter.value = values.includes(previous) ? previous : 'All';
 }
 
 function populateUnits() {
@@ -1755,6 +1842,8 @@ map.on('zoomend', () => {
     await loadBoundaryData();
 
     populateSpecies();
+    populateHuntTypes();
+    populateHuntCategories();
     populateUnits();
 
     buildLiveHuntUnitsLayer();
