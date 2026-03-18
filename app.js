@@ -141,6 +141,8 @@ const resetBtn = document.getElementById('resetBtn');
 
 const selectedTitle = document.getElementById('selectedTitle');
 const selectedMeta = document.getElementById('selectedMeta');
+const selectedTitleMobile = document.getElementById('selectedTitleMobile');
+const selectedMetaMobile = document.getElementById('selectedMetaMobile');
 const huntResultsEl = document.getElementById('huntResults');
 const resultsEl = document.getElementById('results');
 const areaInfoEl = document.getElementById('areaInfo');
@@ -192,6 +194,16 @@ function formatPhone(phone) {
   const d = safe(phone).replace(/\D/g, '');
   if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   return safe(phone);
+}
+
+function setSelectedDisplay(title, meta) {
+  const resolvedTitle = safe(title).trim() || 'No hunt selected';
+  const resolvedMeta = safe(meta).trim() || 'Choose filters or click a hunt unit to load hunt and outfitter results.';
+
+  if (selectedTitle) selectedTitle.textContent = resolvedTitle;
+  if (selectedMeta) selectedMeta.textContent = resolvedMeta;
+  if (selectedTitleMobile) selectedTitleMobile.textContent = resolvedTitle;
+  if (selectedMetaMobile) selectedMetaMobile.textContent = resolvedMeta;
 }
 
 function getUsfsLabel(properties) {
@@ -604,8 +616,11 @@ async function loadBoundaryData() {
 }
 
 function setBuildMarker() {
-  if (selectedMeta && !selectedHunt) {
-    selectedMeta.textContent = `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`;
+  if (!selectedHunt) {
+    setSelectedDisplay(
+      'No hunt selected',
+      `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`
+    );
   }
 }
 
@@ -1392,14 +1407,14 @@ function selectUnitByValue(unitValue) {
   selectedUnit = unitValue;
 
   if (unitFilter) unitFilter.value = unitValue;
-  if (selectedTitle) selectedTitle.textContent = getUnitName(hunt) || unitValue;
-  if (selectedMeta) {
-    selectedMeta.textContent = [
+  setSelectedDisplay(
+    getUnitName(hunt) || unitValue,
+    [
       getSpeciesRaw(hunt),
       getUnitName(hunt) || getUnitCode(hunt),
       getRegion(hunt)
-    ].filter(Boolean).join(' • ');
-  }
+    ].filter(Boolean).join(' • ')
+  );
 
   zoomToHuntSelection(hunt);
 
@@ -1419,14 +1434,14 @@ function selectHuntByCode(huntCode) {
   selectedUnit = getUnitValue(hunt);
 
   if (unitFilter) unitFilter.value = selectedUnit;
-  if (selectedTitle) selectedTitle.textContent = getHuntTitle(hunt) || getUnitName(hunt) || huntCode;
-  if (selectedMeta) {
-    selectedMeta.textContent = [
+  setSelectedDisplay(
+    getHuntTitle(hunt) || getUnitName(hunt) || huntCode,
+    [
       getSpeciesRaw(hunt),
       getUnitName(hunt) || getUnitCode(hunt),
       getRegion(hunt)
-    ].filter(Boolean).join(' • ');
-  }
+    ].filter(Boolean).join(' • ')
+  );
 
   zoomToHuntSelection(hunt);
 
@@ -1456,7 +1471,6 @@ function resetPlanner() {
 
   populateUnits();
 
-  if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
   setBuildMarker();
 
   map.setView([39.3, -111.7], 6);
@@ -1491,7 +1505,6 @@ if (unitFilter) {
     if (!unitFilter.value) {
       selectedHunt = null;
       selectedUnit = null;
-      if (selectedTitle) selectedTitle.textContent = 'No hunt selected';
       setBuildMarker();
       renderAreaInfo();
       renderOutfitters();
