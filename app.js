@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-42';
+const APP_BUILD = 'build-2026-03-21-34';
 const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
 const CESIUM_ION_TOKEN = '';
 
@@ -14,7 +14,7 @@ const outfitters = [
     listingName: 'Wild Eyez Outfitters',
     listingType: 'Outfitter',
     certLevel: 'CPO',
-    verificationStatus: 'Vetted',
+    verificationStatus: 'Verified',
     website: 'https://www.wildeyez.net',
     phone: '4358516480',
     email: 'tyler@wildeyez.net',
@@ -241,11 +241,11 @@ const selectedMetaMobile = document.getElementById('selectedMetaMobile');
 const selectedRefMobile = document.getElementById('selectedRefMobile');
 const selectedSummaryDesktop = document.getElementById('selectedSummaryDesktop');
 const selectedSummaryMobile = document.getElementById('selectedSummaryMobile');
-const mapOfficialPanel = document.getElementById('mapOfficialPanel');
-const mapOfficialFrame = document.getElementById('mapOfficialFrame');
-const mapOfficialMeta = document.getElementById('mapOfficialMeta');
-const openMapOfficialNewTabBtn = document.getElementById('openMapOfficialNewTabBtn');
-const closeMapOfficialPanelBtn = document.getElementById('closeMapOfficialPanelBtn');
+const googleMapsEmbed = document.getElementById('googleMapsEmbed');
+const googleMapsMeta = document.getElementById('googleMapsMeta');
+const dwrBoundaryEmbed = document.getElementById('dwrBoundaryEmbed');
+const dwrBoundaryMeta = document.getElementById('dwrBoundaryMeta');
+const dwrBoundarySnapshot = document.getElementById('dwrBoundarySnapshot');
 const cesiumContainer = document.getElementById('cesiumContainer');
 const cesiumMeta = document.getElementById('cesiumMeta');
 const cesiumNotice = document.getElementById('cesiumNotice');
@@ -253,6 +253,8 @@ const cesiumZoomBtn = document.getElementById('cesiumZoomBtn');
 const cesiumTiltBtn = document.getElementById('cesiumTiltBtn');
 const cesiumResetBtn = document.getElementById('cesiumResetBtn');
 const cesiumTerrainBtn = document.getElementById('cesiumTerrainBtn');
+const googleShell = googleMapsEmbed?.closest('.google-shell') || null;
+const dwrShell = dwrBoundaryEmbed?.closest('.google-shell') || null;
 const cesiumShell = cesiumContainer?.closest('.google-shell') || null;
 const toggleCesiumPanelBtn = document.getElementById('toggleCesiumPanelBtn');
 const aboutModal = document.getElementById('aboutModal');
@@ -266,6 +268,8 @@ let cesiumTerrainEnabled = false;
 let cesiumTilted = false;
 let cesiumViewRequestId = 0;
 const remoteHuntInfoCache = new Map();
+const toggleGooglePanelBtn = document.getElementById('toggleGooglePanelBtn');
+const toggleDwrPanelBtn = document.getElementById('toggleDwrPanelBtn');
 const huntResultsEl = document.getElementById('huntResults');
 const huntResultsMobileEl = document.getElementById('huntResultsMobile');
 const resultsEl = document.getElementById('results');
@@ -339,7 +343,50 @@ function setSelectedDisplay(title, meta, reference = '') {
   if (selectedRefMobile) selectedRefMobile.textContent = hasSelection ? resolvedReference : 'Reference';
   if (selectedSummaryDesktop) selectedSummaryDesktop.classList.toggle('is-active', hasSelection);
   if (selectedSummaryMobile) selectedSummaryMobile.classList.toggle('is-active', hasSelection);
-  if (openBoundaryBtn) openBoundaryBtn.disabled = !hasSelection;
+}
+
+function getGoogleMapTypeForCurrentBasemap() {
+  const base = safe(basemapSelect?.value).trim().toLowerCase();
+  // Google Maps Embed API does not support a true "terrain" maptype here,
+  // so we map our Terrain view to roadmap as the closest supported option.
+  if (base === 'sat') return 'hybrid';
+  if (base === 'usgs') return 'roadmap';
+  if (base === 'natgeo') return 'roadmap';
+  return 'roadmap';
+}
+
+function updateGoogleMapsEmbed(hunt = null) {
+  if (!googleMapsEmbed) return;
+
+  const googleMapType = getGoogleMapTypeForCurrentBasemap();
+
+  let src = `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(GOOGLE_EMBED_API_KEY)}&q=${encodeURIComponent('Utah')}&maptype=${encodeURIComponent(googleMapType)}`;
+
+  if (hunt) {
+    const trustedCenter = getTrustedUnitCenter(hunt);
+    const lat = getHuntLat(hunt);
+    const lng = getHuntLng(hunt);
+    const hasValidTrustedCenter = Array.isArray(trustedCenter) && isLikelyUtahCoordinate(trustedCenter[0], trustedCenter[1]);
+    const hasValidHuntCenter = isLikelyUtahCoordinate(lat, lng);
+    const centerLat = hasValidTrustedCenter ? trustedCenter[0] : hasValidHuntCenter ? lat : null;
+    const centerLng = hasValidTrustedCenter ? trustedCenter[1] : hasValidHuntCenter ? lng : null;
+
+    if (Number.isFinite(centerLat) && Number.isFinite(centerLng)) {
+      const center = `${centerLat},${centerLng}`;
+      src = `https://www.google.com/maps/embed/v1/view?key=${encodeURIComponent(GOOGLE_EMBED_API_KEY)}&center=${encodeURIComponent(center)}&zoom=9&maptype=${encodeURIComponent(googleMapType)}`;
+    } else {
+      const query = [getUnitName(hunt), 'hunt unit', 'Utah'].filter(Boolean).join(' ');
+      src = `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(GOOGLE_EMBED_API_KEY)}&q=${encodeURIComponent(query)}&maptype=${encodeURIComponent(googleMapType)}`;
+    }
+  }
+
+  googleMapsEmbed.src = src;
+
+  if (googleMapsMeta) {
+    googleMapsMeta.textContent = hunt
+      ? `Showing Google Maps centered on ${getUnitName(hunt) || getHuntTitle(hunt)} with a ${googleMapType} view matched to the main basemap as closely as Google allows.`
+      : `Showing a general Utah ${googleMapType} view. Select a hunt to update this map.`;
+  }
 }
 
 function getDwrPlannerUrl(hunt = null) {
@@ -352,32 +399,6 @@ function getDwrHuntInfoUrl(hunt = null) {
   const huntCode = safe(getHuntCode(hunt)).trim();
   if (huntCode) return `https://dwrapps.utah.gov/huntboundary/PrintABoundary?HN=${encodeURIComponent(huntCode)}`;
   return getDwrPlannerUrl(hunt);
-}
-
-function setMapOfficialPanelOpen(isOpen, hunt = selectedHunt) {
-  if (!mapOfficialPanel || !mapOfficialFrame) return;
-
-  if (!isOpen) {
-    mapOfficialPanel.hidden = true;
-    mapOfficialFrame.src = 'about:blank';
-    if (mapOfficialMeta) {
-      mapOfficialMeta.textContent = 'Official source: Utah DWR. If this panel does not load, use Open in New Tab.';
-    }
-    if (openMapOfficialNewTabBtn) {
-      openMapOfficialNewTabBtn.href = '#';
-    }
-    return;
-  }
-
-  const src = getDwrHuntInfoUrl(hunt);
-  mapOfficialFrame.src = src;
-  if (mapOfficialMeta) {
-    mapOfficialMeta.textContent = 'Official source: Utah DWR. If this panel does not load, use Open in New Tab.';
-  }
-  if (openMapOfficialNewTabBtn) {
-    openMapOfficialNewTabBtn.href = src;
-  }
-  mapOfficialPanel.hidden = false;
 }
 
 async function fetchRemoteHuntInfo(hunt) {
@@ -442,6 +463,62 @@ async function refreshSelectedHuntOfficialInfo(hunt = selectedHunt) {
     renderAreaInfo(remoteInfo);
   } catch (error) {
     console.warn('Remote hunt info refresh failed:', error);
+  }
+}
+
+function updateDwrBoundaryEmbed(hunt = null, options = {}) {
+  if (!dwrBoundaryEmbed) return;
+
+  const src = options.forceFrame && hunt ? getDwrHuntInfoUrl(hunt) : getDwrPlannerUrl(hunt);
+  const frameWrap = dwrBoundaryEmbed.closest('.google-frame-wrap');
+
+  if (hunt) {
+    if (dwrBoundarySnapshot) {
+      dwrBoundarySnapshot.style.display = 'block';
+      dwrBoundarySnapshot.innerHTML = `
+        <div class="dwr-snapshot-card">
+          <h4>${escapeHtml(getHuntTitle(hunt) || getHuntCode(hunt))}</h4>
+          <div class="dwr-snapshot-grid">
+            <div><strong>Hunt Number:</strong><br>${escapeHtml(getHuntCode(hunt) || 'N/A')}</div>
+            <div><strong>Unit:</strong><br>${escapeHtml(getUnitName(hunt) || getUnitValue(hunt) || 'N/A')}</div>
+            <div><strong>Species:</strong><br>${escapeHtml(getSpeciesRaw(hunt) || 'N/A')}</div>
+            <div><strong>Sex:</strong><br>${escapeHtml(getSex(hunt) || 'N/A')}</div>
+            <div><strong>Weapon:</strong><br>${escapeHtml(getWeapon(hunt) || 'N/A')}</div>
+            <div><strong>Hunt Type:</strong><br>${escapeHtml(getHuntType(hunt) || 'N/A')}</div>
+            <div><strong>Dates:</strong><br>${escapeHtml(getDates(hunt) || 'N/A')}</div>
+          </div>
+          <div class="dwr-snapshot-actions">
+            <button type="button" class="btn-primary" data-action="load-dwr-map-here">Load Full Hunt Info Here</button>
+            <a href="${escapeHtml(src)}" target="_blank" rel="noopener noreferrer">
+              <button type="button" class="btn-secondary">Open Full Hunt Info in New Tab</button>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+    if (frameWrap && !options.forceFrame) frameWrap.style.display = 'none';
+  } else {
+    if (dwrBoundarySnapshot) {
+      dwrBoundarySnapshot.style.display = 'none';
+      dwrBoundarySnapshot.innerHTML = '';
+    }
+    if (frameWrap) frameWrap.style.display = '';
+    dwrBoundaryEmbed.src = src;
+  }
+
+  if (options.forceFrame) {
+    if (frameWrap) frameWrap.style.display = '';
+    dwrBoundaryEmbed.src = src;
+  }
+
+  if (dwrBoundaryMeta) {
+    dwrBoundaryMeta.textContent = hunt
+      ? `Showing a hunt info snapshot for ${getUnitName(hunt) || getHuntTitle(hunt)}. Load the full official hunt details here when you want the long-form unit information.`
+      : 'Showing the official state hunt reference. Select a hunt, then use the hunt info button to load the full hunt details here.';
+  }
+
+  if (options.scrollIntoView) {
+    (dwrBoundarySnapshot || dwrBoundaryEmbed).scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -2307,7 +2384,7 @@ function renderOutfitterResults() {
       <h3>${escapeHtml(o.listingName)}</h3>
       <div class="pill-row">
         <span class="pill cert">${escapeHtml(o.certLevel || 'Member')}</span>
-        <span class="pill verified">${escapeHtml(o.verificationStatus || 'Vetted')}</span>
+        <span class="pill verified">${escapeHtml(o.verificationStatus || 'Listed')}</span>
       </div>
       <div class="meta">
         <div><strong>City:</strong> ${escapeHtml(o.city)}</div>
@@ -2350,10 +2427,9 @@ function selectUnitByValue(unitValue) {
   renderOutfitterResults();
   renderUnitResults();
   renderHuntResults();
+  updateGoogleMapsEmbed(hunt);
   updateCesiumView(hunt);
-  if (mapOfficialPanel && !mapOfficialPanel.hidden) {
-    setMapOfficialPanelOpen(true, hunt);
-  }
+  updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
   refreshSelectedHuntOfficialInfo(hunt);
 }
@@ -2381,10 +2457,9 @@ function selectHuntByCode(huntCode) {
   renderOutfitterResults();
   renderUnitResults();
   renderHuntResults();
+  updateGoogleMapsEmbed(hunt);
   updateCesiumView(hunt);
-  if (mapOfficialPanel && !mapOfficialPanel.hidden) {
-    setMapOfficialPanelOpen(true, hunt);
-  }
+  updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
   refreshSelectedHuntOfficialInfo(hunt);
 }
@@ -2418,8 +2493,9 @@ function resetPlanner() {
   renderOutfitterResults();
   renderUnitResults();
   renderHuntResults();
+  updateGoogleMapsEmbed();
   updateCesiumView();
-  setMapOfficialPanelOpen(false);
+  updateDwrBoundaryEmbed();
   refreshLiveBoundaryFilter();
 }
 
@@ -2449,7 +2525,9 @@ if (unitFilter) {
       renderOutfitterResults();
       renderUnitResults();
       renderHuntResults();
+      updateGoogleMapsEmbed();
       updateCesiumView();
+      updateDwrBoundaryEmbed();
       refreshLiveBoundaryFilter();
       return;
     }
@@ -2466,6 +2544,7 @@ if (basemapSelect) {
     });
     (basemaps[basemapSelect.value] || basemaps.usgs).addTo(map);
     updateMapAppearance();
+    updateGoogleMapsEmbed(selectedHunt);
     updateCesiumView(selectedHunt);
 
     if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
@@ -2532,7 +2611,7 @@ if (toggleUnits) toggleUnits.addEventListener('change', renderUnitCenters);
 
 if (openBoundaryBtn) {
   openBoundaryBtn.addEventListener('click', () => {
-    if (selectedHunt) setMapOfficialPanelOpen(true, selectedHunt);
+    updateDwrBoundaryEmbed(selectedHunt, { scrollIntoView: true });
   });
 }
 
@@ -2557,9 +2636,15 @@ if (aboutOkBtn) {
   });
 }
 
-if (closeMapOfficialPanelBtn) {
-  closeMapOfficialPanelBtn.addEventListener('click', () => {
-    setMapOfficialPanelOpen(false);
+if (toggleGooglePanelBtn) {
+  toggleGooglePanelBtn.addEventListener('click', () => {
+    toggleEmbeddedPanel(toggleGooglePanelBtn, googleMapsEmbed);
+  });
+}
+
+if (toggleDwrPanelBtn) {
+  toggleDwrPanelBtn.addEventListener('click', () => {
+    toggleEmbeddedPanel(toggleDwrPanelBtn, dwrBoundaryEmbed);
   });
 }
 
@@ -2623,7 +2708,7 @@ document.addEventListener('click', e => {
   }
   const dwrBtn = target.closest('[data-action="load-dwr-map-here"]');
   if (dwrBtn) {
-    if (selectedHunt) setMapOfficialPanelOpen(true, selectedHunt);
+    updateDwrBoundaryEmbed(selectedHunt, { forceFrame: true, scrollIntoView: true });
   }
 });
 
@@ -2662,45 +2747,28 @@ map.on('zoomend', () => {
     setBuildMarker();
 
     await loadHuntData();
+    await loadBoundaryData();
+
     refreshSelectionMatrix();
 
-    try {
-      await loadBoundaryData();
-    } catch (boundaryErr) {
-      console.warn('Boundary data unavailable, continuing without live boundaries:', boundaryErr);
-      huntBoundaryData = { type: 'FeatureCollection', features: [] };
-    }
+    buildLiveHuntUnitsLayer();
+    buildUSFSLayer();
+    buildBLMLayer();
 
-    try {
-      buildLiveHuntUnitsLayer();
-      buildUSFSLayer();
-      buildBLMLayer();
-      await refreshLiveBoundaryFilter();
-    } catch (layerErr) {
-      console.warn('Map layer setup unavailable, continuing with hunt planner only:', layerErr);
-    }
+    await refreshLiveBoundaryFilter();
 
-    try {
-      renderUtahOutline();
-      renderUnitCenters();
-      renderOwnershipPlaceholders();
-      renderAreaInfo();
-      renderOutfitters();
-      renderOutfitterResults();
-      renderUnitResults();
-      renderHuntResults();
-    } catch (uiErr) {
-      console.warn('UI render setup hit an issue, keeping core hunt filters active:', uiErr);
-      try { renderHuntResults(); } catch (huntRenderErr) {}
-    }
-
-    try {
-      initCesiumViewer();
-      updateCesiumView();
-    } catch (cesiumErr) {
-      console.warn('Cesium setup unavailable, continuing without 3D view:', cesiumErr);
-    }
-
+    renderUtahOutline();
+    renderUnitCenters();
+    renderOwnershipPlaceholders();
+    renderAreaInfo();
+    renderOutfitters();
+    renderOutfitterResults();
+    renderUnitResults();
+    renderHuntResults();
+    initCesiumViewer();
+    updateGoogleMapsEmbed();
+    updateCesiumView();
+    updateDwrBoundaryEmbed();
     try {
       if (!localStorage.getItem('uogaHuntPlannerInfoSeen')) {
         setAboutModalOpen(true);
@@ -2715,10 +2783,8 @@ map.on('zoomend', () => {
   } catch (err) {
     console.error('Init failed:', err);
 
-    if (!huntData.length) {
-      if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
-      if (unitFilter) unitFilter.innerHTML = '<option value="">Load Failed</option>';
-    }
+    if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
+    if (unitFilter) unitFilter.innerHTML = '<option value="">Load Failed</option>';
 
     setHtml([huntResultsEl, huntResultsMobileEl], `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`);
     setHtml([resultsEl, resultsMobileEl], `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`);
@@ -2731,5 +2797,3 @@ map.on('zoomend', () => {
     window.setTimeout(() => map.invalidateSize(), 0);
   }
 })();
-
-
