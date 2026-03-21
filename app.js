@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-16';
+const APP_BUILD = 'build-2026-03-21-18';
 const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
 const CESIUM_ION_TOKEN = '';
 
@@ -490,6 +490,10 @@ function initCesiumViewer() {
 
 function getCesiumSelectedCenter(hunt = selectedHunt) {
   if (!hunt) return null;
+  const boundaryCenter = getSelectedBoundaryCenter(hunt);
+  if (boundaryCenter && isLikelyUtahCoordinate(boundaryCenter.lat, boundaryCenter.lng)) {
+    return boundaryCenter;
+  }
   const trustedCenter = getTrustedUnitCenter(hunt);
   const lat = getHuntLat(hunt);
   const lng = getHuntLng(hunt);
@@ -1374,6 +1378,94 @@ function getBoundarySourceFeatures() {
   return Array.isArray(huntBoundaryData?.features) ? huntBoundaryData.features : [];
 }
 
+function extendBoundsFromCoordinates(bounds, coordinates) {
+  if (!Array.isArray(coordinates)) return;
+
+  if (coordinates.length >= 2 && Number.isFinite(Number(coordinates[0])) && Number.isFinite(Number(coordinates[1]))) {
+    const lng = Number(coordinates[0]);
+    const lat = Number(coordinates[1]);
+    if (isLikelyUtahCoordinate(lat, lng)) {
+      bounds.minLat = Math.min(bounds.minLat, lat);
+      bounds.maxLat = Math.max(bounds.maxLat, lat);
+      bounds.minLng = Math.min(bounds.minLng, lng);
+      bounds.maxLng = Math.max(bounds.maxLng, lng);
+    }
+    return;
+  }
+
+  coordinates.forEach(child => extendBoundsFromCoordinates(bounds, child));
+}
+
+function getBoundaryGeometryCenter(feature) {
+  const geometry = feature?.geometry;
+  const bounds = {
+    minLat: Infinity,
+    maxLat: -Infinity,
+    minLng: Infinity,
+    maxLng: -Infinity
+  };
+
+  if (!geometry) return null;
+
+  if (Array.isArray(geometry.coordinates)) {
+    extendBoundsFromCoordinates(bounds, geometry.coordinates);
+  } else if (Array.isArray(geometry.rings)) {
+    extendBoundsFromCoordinates(bounds, geometry.rings);
+  } else if (Array.isArray(geometry.paths)) {
+    extendBoundsFromCoordinates(bounds, geometry.paths);
+  }
+
+  if (![bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng].every(Number.isFinite)) {
+    return null;
+  }
+
+  return {
+    lat: (bounds.minLat + bounds.maxLat) / 2,
+    lng: (bounds.minLng + bounds.maxLng) / 2
+  };
+}
+
+function getSelectedBoundaryCenter(hunt = selectedHunt) {
+  if (!hunt) return null;
+
+  const matchSets = buildBoundaryMatchSets(hunt);
+  const features = getBoundarySourceFeatures().filter(feature => {
+    const featureId = getBoundaryFeatureId(feature);
+    const featureName = getBoundaryFeatureName(feature).trim().toLowerCase();
+    return matchSets.names.has(featureName) || (featureId && matchSets.ids.has(featureId));
+  });
+
+  if (!features.length) return null;
+
+  const aggregateBounds = {
+    minLat: Infinity,
+    maxLat: -Infinity,
+    minLng: Infinity,
+    maxLng: -Infinity
+  };
+
+  features.forEach(feature => {
+    const geometry = feature?.geometry;
+    if (!geometry) return;
+    if (Array.isArray(geometry.coordinates)) {
+      extendBoundsFromCoordinates(aggregateBounds, geometry.coordinates);
+    } else if (Array.isArray(geometry.rings)) {
+      extendBoundsFromCoordinates(aggregateBounds, geometry.rings);
+    } else if (Array.isArray(geometry.paths)) {
+      extendBoundsFromCoordinates(aggregateBounds, geometry.paths);
+    }
+  });
+
+  if (![aggregateBounds.minLat, aggregateBounds.maxLat, aggregateBounds.minLng, aggregateBounds.maxLng].every(Number.isFinite)) {
+    return null;
+  }
+
+  return {
+    lat: (aggregateBounds.minLat + aggregateBounds.maxLat) / 2,
+    lng: (aggregateBounds.minLng + aggregateBounds.maxLng) / 2
+  };
+}
+
 function canSelectBoundaryByDoubleClick() {
   return !toggleUSFS?.checked && !toggleBLM?.checked;
 }
@@ -2059,6 +2151,7 @@ function selectUnitByValue(unitValue) {
   renderHuntResults();
   updateGoogleMapsEmbed(hunt);
   updateCesiumView(hunt);
+  updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
 }
 
@@ -2088,6 +2181,7 @@ function selectHuntByCode(huntCode) {
   renderHuntResults();
   updateGoogleMapsEmbed(hunt);
   updateCesiumView(hunt);
+  updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
 }
 
@@ -2154,6 +2248,7 @@ if (unitFilter) {
       renderHuntResults();
       updateGoogleMapsEmbed();
       updateCesiumView();
+      updateDwrBoundaryEmbed();
       refreshLiveBoundaryFilter();
       return;
     }
