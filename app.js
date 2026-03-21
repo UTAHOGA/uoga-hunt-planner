@@ -5,11 +5,11 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-46';
+const APP_BUILD = 'build-2026-03-21-48';
 const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
 const CESIUM_ION_TOKEN = '';
 
-const outfitters = [
+let outfitters = [
   {
     listingName: 'Wild Eyez Outfitters',
     listingType: 'Outfitter',
@@ -18,12 +18,17 @@ const outfitters = [
     website: 'https://www.wildeyez.net',
     phone: '4358516480',
     email: 'tyler@wildeyez.net',
-    species: 'Elk, Mule Deer',
+    speciesServed: 'Elk, Mule Deer',
     region: 'Utah',
     city: 'Manti',
     unitsServed: 'beaver-east,fishlake,manti-san-rafael,monroe,fillmore,nebo',
-    forestDistricts: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
+    blmDistricts: 'Richfield',
+    usfsForests: 'Fishlake NF - Richfield; Manti-La Sal NF - Sanpete'
   }
+];
+const OUTFITTERS_DATA_SOURCES = [
+  './data/outfitters.json',
+  './data/outfitters.json.json'
 ];
 
 const DWR_MAPSERVER =
@@ -89,6 +94,22 @@ const HUNT_DATA_SOURCES = [
     candidates: [
       './data/Utah_Hunt_Planner_Master_BlackBear.json',
       './data/Utah_Hunt_Planner_Master_BlackBear.json.json'
+    ]
+  },
+  {
+    label: 'Turkey',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_Turkey.json',
+      './data/Utah_Hunt_Planner_Master_Turkey.json.json'
+    ]
+  },
+  {
+    label: 'Cougar',
+    required: false,
+    candidates: [
+      './data/Utah_Hunt_Planner_Master_Cougar.json',
+      './data/Utah_Hunt_Planner_Master_Cougar.json.json'
     ]
   },
   {
@@ -180,6 +201,14 @@ const HUNT_CATEGORY_ORDER = [
   'Desert Bighorn',
   'Mountain Goat',
   'Bison',
+  'Turkey',
+  'Cougar',
+  'Conservation',
+  'Pursuit',
+  'Spot and Stalk',
+  'Control',
+  'CWMU',
+  'Select Areas',
   'Statewide Permit'
 ];
 
@@ -321,6 +350,18 @@ function slugify(v) {
     .replace(/&/g, 'and')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function listify(value) {
+  if (Array.isArray(value)) return value.map(v => safe(v).trim()).filter(Boolean);
+  return safe(value)
+    .split(/[;,|]/)
+    .map(v => safe(v).trim())
+    .filter(Boolean);
+}
+
+function slugList(value) {
+  return listify(value).map(slugify).filter(Boolean);
 }
 
 function formatPhone(phone) {
@@ -850,7 +891,6 @@ function toggleEmbeddedPanel(buttonEl, frameEl) {
   if (!shell || !buttonEl) return;
   shell.classList.toggle('expanded');
   buttonEl.textContent = shell.classList.contains('expanded') ? 'Collapse Panel' : 'Expand Panel';
-  window.setTimeout(() => shell.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
 function setAboutModalOpen(isOpen) {
@@ -1157,7 +1197,7 @@ function updateMapAppearance() {
   const isTerrainLike = ['usgs', 'outdoor', 'topo'].includes(basemapSelect.value);
   mapWrapEl.classList.toggle('terrain-boost', isTerrainLike);
   if (googleShell) googleShell.classList.toggle('terrain-sync', isTerrainLike);
-  if (dwrShell) dwrShell.classList.toggle('terrain-sync', isTerrainLike);
+  if (dwrShell) dwrShell.classList.remove('terrain-sync');
   if (cesiumShell) cesiumShell.classList.toggle('terrain-sync', isTerrainLike);
 }
 
@@ -1332,6 +1372,36 @@ async function loadHuntData() {
 
   if (!huntData.length) throw new Error('No hunt records found in any JSON source.');
   console.log('Loaded hunt datasets:', loadedLabels.join(', '));
+}
+
+async function loadOutfittersData() {
+  for (const url of OUTFITTERS_DATA_SOURCES) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (!Array.isArray(data)) continue;
+      outfitters = data.map(o => ({
+        listingName: safe(o.listingName || o.name).trim(),
+        listingType: safe(o.listingType || 'Outfitter').trim(),
+        certLevel: safe(o.certLevel).trim(),
+        verificationStatus: safe(o.verificationStatus || 'Vetted').trim(),
+        website: safe(o.website).trim(),
+        phone: safe(o.phone).trim(),
+        email: safe(o.email).trim(),
+        region: safe(o.region).trim(),
+        city: safe(o.city).trim(),
+        speciesServed: Array.isArray(o.speciesServed) ? o.speciesServed.join(', ') : safe(o.speciesServed || o.species).trim(),
+        unitsServed: Array.isArray(o.unitsServed) ? o.unitsServed.join(', ') : safe(o.unitsServed).trim(),
+        blmDistricts: Array.isArray(o.blmDistricts) ? o.blmDistricts.join(', ') : safe(o.blmDistricts).trim(),
+        usfsForests: Array.isArray(o.usfsForests) ? o.usfsForests.join(', ') : safe(o.usfsForests || o.forestDistricts).trim()
+      })).filter(o => o.listingName);
+      console.log('Loaded outfitter dataset:', url);
+      return;
+    } catch (error) {
+      console.warn('Outfitter data load attempt failed:', url, error);
+    }
+  }
 }
 
 async function loadBoundaryData() {
@@ -1600,11 +1670,20 @@ function getSelectedOutfitters() {
   const codeSlug = slugify(getUnitCode(selectedHunt));
   const nameSlug = slugify(getUnitName(selectedHunt));
   const valueSlug = slugify(getUnitValue(selectedHunt));
+  const huntSpecies = [
+    slugify(getSpeciesRaw(selectedHunt)),
+    slugify(getSpeciesDisplay(selectedHunt))
+  ].filter(Boolean);
 
   return outfitters
     .filter(o => {
-      const served = safe(o.unitsServed).split(',').map(x => slugify(x));
+      const served = slugList(o.unitsServed);
       return served.includes(codeSlug) || served.includes(nameSlug) || served.includes(valueSlug);
+    })
+    .filter(o => {
+      const servedSpecies = slugList(o.speciesServed || o.species);
+      if (!servedSpecies.length || !huntSpecies.length) return true;
+      return servedSpecies.some(species => huntSpecies.includes(species));
     })
     .filter(o => {
       const cert = safe(o.certLevel).toUpperCase();
@@ -2012,7 +2091,7 @@ async function zoomToSelectedBoundary() {
       const tempLayer = L.geoJSON(localFeatures);
       const localBounds = tempLayer.getBounds();
       if (localBounds && localBounds.isValid()) {
-        const tighterBounds = localBounds.pad(-0.07);
+        const tighterBounds = localBounds.pad(-0.035);
         const mapWidth = map.getSize ? map.getSize().x : window.innerWidth;
         const isDesktopLayout = mapWidth >= 1100;
         const paddingTopLeft = isDesktopLayout ? [260, 70] : [12, 12];
@@ -2295,7 +2374,11 @@ function renderUnitResults() {
 
 function renderHuntResults() {
   if (!huntResultsEl && !huntResultsMobileEl) return;
-  const filtered = getFilteredHunts();
+  const selectedCode = selectedHunt ? getHuntCode(selectedHunt) : '';
+  const filtered = getFilteredHunts().filter(h => {
+    if (!selectedCode) return true;
+    return getHuntCode(h) !== selectedCode;
+  });
   const total = filtered.length;
   const shown = Math.min(huntResultsLimit, total);
 
@@ -2310,10 +2393,8 @@ function renderHuntResults() {
     const code = getHuntCode(h);
     const title = getHuntTitle(h) || getUnitName(h) || code || 'Untitled Hunt';
     const unitName = getUnitName(h) || getUnitValue(h) || 'N/A';
-    const isSelected = selectedHunt && getHuntCode(selectedHunt) === code;
-
     return `
-      <div class="result-card ${isSelected ? 'selected' : ''}">
+      <div class="result-card">
         <h3>${escapeHtml(title)}</h3>
         <div>${escapeHtml(unitName)}</div>
         <div>${escapeHtml(code)}</div>
@@ -2446,9 +2527,11 @@ function renderOutfitterResults() {
       </div>
       <div class="meta">
         <div><strong>City:</strong> ${escapeHtml(o.city)}</div>
-        <div><strong>Species:</strong> ${escapeHtml(o.species)}</div>
+        <div><strong>Species:</strong> ${escapeHtml(o.speciesServed || o.species || 'N/A')}</div>
         <div><strong>Phone:</strong> ${escapeHtml(formatPhone(o.phone))}</div>
-        <div><strong>Districts:</strong> ${escapeHtml(o.forestDistricts)}</div>
+        <div><strong>Hunt Units:</strong> ${escapeHtml(listify(o.unitsServed).join(', ') || 'N/A')}</div>
+        <div><strong>BLM Districts:</strong> ${escapeHtml(listify(o.blmDistricts).join(', ') || 'N/A')}</div>
+        <div><strong>USFS Forests:</strong> ${escapeHtml(listify(o.usfsForests || o.forestDistricts).join(', ') || 'N/A')}</div>
       </div>
       <div class="result-actions">
         <a href="${escapeHtml(normalizeUrl(o.website))}" target="_blank" rel="noopener noreferrer">
@@ -2809,6 +2892,7 @@ map.on('zoomend', () => {
     setBuildMarker();
 
     await loadHuntData();
+    await loadOutfittersData();
     await loadBoundaryData();
 
     refreshSelectionMatrix();
