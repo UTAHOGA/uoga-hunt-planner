@@ -40,7 +40,7 @@
     .app {
       display: grid;
       grid-template-columns: 320px 1fr 320px;
-      height: 100vh;
+      min-height: 100vh;
     }
 
     .sidebar, .results, .outfitters-panel {
@@ -734,6 +734,56 @@
       line-height: 1.45;
     }
 
+    .google-section {
+      padding: 14px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,252,246,.98), rgba(245,236,220,.95));
+    }
+
+    .google-shell {
+      max-width: 1600px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .google-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(240,228,209,.78));
+    }
+
+    .google-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .google-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .google-frame-wrap {
+      background: #e7dfd1;
+      min-height: 520px;
+    }
+
+    .google-frame {
+      display: block;
+      width: 100%;
+      height: 520px;
+      border: none;
+      background: #ede6da;
+    }
+
     .mobile-sections {
       display: none;
       margin-top: 10px;
@@ -927,6 +977,16 @@
       .results,
       .outfitters-panel {
         display: none;
+      }
+
+      .google-head {
+        display: block;
+      }
+
+      .google-frame-wrap,
+      .google-frame {
+        min-height: 420px;
+        height: 420px;
       }
     }
 
@@ -1197,8 +1257,29 @@
     </aside>
   </div>
 
+  <section class="google-section">
+    <div class="google-shell">
+      <div class="google-head">
+        <div>
+          <h3>Google Maps View</h3>
+          <div id="googleMapsMeta" class="google-meta">Showing a general Utah view. Select a hunt to update this map.</div>
+        </div>
+      </div>
+      <div class="google-frame-wrap">
+        <iframe
+          id="googleMapsEmbed"
+          class="google-frame"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q=Utah&output=embed"
+          title="Google Maps supplemental view"
+        ></iframe>
+      </div>
+    </div>
+  </section>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260320-01"></script>
 </body>
 </html>
