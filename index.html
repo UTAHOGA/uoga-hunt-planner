@@ -690,8 +690,8 @@
     }
 
     .about-dialog {
-      width: min(1100px, 96vw);
-      max-height: 88vh;
+      width: min(760px, 94vw);
+      max-height: 72vh;
       overflow: auto;
       border: 2px solid #c26a34;
       border-radius: 10px;
@@ -711,18 +711,18 @@
 
     .about-dialog-head h3 {
       margin: 0;
-      font-size: 22px;
+      font-size: 20px;
     }
 
     .about-dialog-body {
-      padding: 18px 20px 20px;
+      padding: 16px 18px 18px;
       color: var(--text);
-      font-size: 16px;
-      line-height: 1.55;
+      font-size: 15px;
+      line-height: 1.5;
     }
 
     .about-dialog-body p {
-      margin: 0 0 14px;
+      margin: 0 0 10px;
     }
 
     .about-dialog-body ul {
@@ -737,7 +737,7 @@
     .about-dialog-actions {
       display: flex;
       justify-content: flex-end;
-      padding: 0 20px 18px;
+      padding: 0 18px 16px;
     }
     .result-meta-row {
       margin-top: 10px;
@@ -1913,29 +1913,19 @@
   <div id="aboutModal" class="about-modal" aria-hidden="true">
     <div class="about-dialog" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
       <div class="about-dialog-head">
-        <h3 id="aboutModalTitle">U.O.G.A. Hunt Planner Instructions</h3>
+        <h3 id="aboutModalTitle">Welcome To The U.O.G.A. Hunt Planner</h3>
         <button id="closeAboutBtn" type="button" class="btn-secondary">Close</button>
       </div>
       <div class="about-dialog-body">
-        <p><strong>The U.O.G.A. Hunt Planner</strong> is a map-first scouting tool built to help hunters move from unit search to vetted outfitter discovery without leaving the planner workflow.</p>
-        <p><strong>Best flow:</strong> choose a hunt, use the primary map as your main scouting workspace, then use the vetted outfitter panel to review matched services for that unit.</p>
+        <p><strong>Start here:</strong> this planner is built to help you find a hunt, review the unit, and connect with vetted outfitters in one place.</p>
         <ol class="brand-steps" style="margin-bottom:14px;">
-          <li><strong>Start in Find a Hunt</strong> and search by hunt number, unit, species, sex, hunt type, hunt class, or weapon.</li>
-          <li><strong>Select a hunt</strong> from the results or click the boundary on the primary map.</li>
-          <li><strong>Read the selected-hunt card and map-side detail panel</strong> on the primary map. That is your main hunt-info workflow now.</li>
-          <li><strong>Leave Vetted Outfitters on</strong> under <strong>Outfitter Vetting</strong> so the right-side results panel narrows to the selected hunt.</li>
-          <li><strong>Use U.O.G.A. Land Layers</strong> when you want more access context from USFS, BLM, SITLA, state, or private layers.</li>
-          <li><strong>Open Hunt Details</strong> only when you want an additional official hunt-details reference.</li>
+          <li><strong>Find a hunt</strong> with the filters on the left.</li>
+          <li><strong>Select a hunt</strong> from the list or click a unit on the map.</li>
+          <li><strong>Read Hunt Details</strong> on the main map.</li>
+          <li><strong>Review Vetted Outfitters</strong> on the right.</li>
+          <li><strong>Turn on Land Layers</strong> when you want access and ownership context.</li>
         </ol>
-        <p>Use <strong>Map View</strong> to change the basemap, then use <strong>Outfitter Vetting</strong> to turn on U.O.G.A. land-reference layers and vetted outfitter results tied to the selected unit.</p>
-        <ul>
-          <li><strong>Live Utah Hunt Units:</strong> official hunt-unit boundary reference on your main map.</li>
-          <li><strong>USFS, BLM, SITLA, State, Private:</strong> land-reference context to help with access planning.</li>
-          <li><strong>Vetted Outfitters:</strong> U.O.G.A. member listings matched to the selected hunt unit.</li>
-          <li><strong>Utah DWR Official Hunt Details:</strong> an optional official hunt-details reference panel.</li>
-          <li><strong>Cesium 3D Scout View:</strong> a separate scouting panel for terrain-style visual review and future 3D expansion.</li>
-        </ul>
-        <p>U.O.G.A. Hunt Planner is built to keep hunt selection, land context, vetted outfitter results, and scouting tools together in one place.</p>
+        <p><strong>Optional:</strong> use <strong>Cesium 3D Scout View</strong> for extra terrain review.</p>
       </div>
       <div class="about-dialog-actions">
         <button id="aboutOkBtn" type="button" class="btn-primary">OK</button>
