@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-40';
+const APP_BUILD = 'build-2026-03-21-42';
 const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
 const CESIUM_ION_TOKEN = '';
 
@@ -2671,22 +2671,36 @@ map.on('zoomend', () => {
       huntBoundaryData = { type: 'FeatureCollection', features: [] };
     }
 
-    buildLiveHuntUnitsLayer();
-    buildUSFSLayer();
-    buildBLMLayer();
+    try {
+      buildLiveHuntUnitsLayer();
+      buildUSFSLayer();
+      buildBLMLayer();
+      await refreshLiveBoundaryFilter();
+    } catch (layerErr) {
+      console.warn('Map layer setup unavailable, continuing with hunt planner only:', layerErr);
+    }
 
-    await refreshLiveBoundaryFilter();
+    try {
+      renderUtahOutline();
+      renderUnitCenters();
+      renderOwnershipPlaceholders();
+      renderAreaInfo();
+      renderOutfitters();
+      renderOutfitterResults();
+      renderUnitResults();
+      renderHuntResults();
+    } catch (uiErr) {
+      console.warn('UI render setup hit an issue, keeping core hunt filters active:', uiErr);
+      try { renderHuntResults(); } catch (huntRenderErr) {}
+    }
 
-    renderUtahOutline();
-    renderUnitCenters();
-    renderOwnershipPlaceholders();
-    renderAreaInfo();
-    renderOutfitters();
-    renderOutfitterResults();
-    renderUnitResults();
-    renderHuntResults();
-    initCesiumViewer();
-    updateCesiumView();
+    try {
+      initCesiumViewer();
+      updateCesiumView();
+    } catch (cesiumErr) {
+      console.warn('Cesium setup unavailable, continuing without 3D view:', cesiumErr);
+    }
+
     try {
       if (!localStorage.getItem('uogaHuntPlannerInfoSeen')) {
         setAboutModalOpen(true);
@@ -2701,8 +2715,10 @@ map.on('zoomend', () => {
   } catch (err) {
     console.error('Init failed:', err);
 
-    if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
-    if (unitFilter) unitFilter.innerHTML = '<option value="">Load Failed</option>';
+    if (!huntData.length) {
+      if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
+      if (unitFilter) unitFilter.innerHTML = '<option value="">Load Failed</option>';
+    }
 
     setHtml([huntResultsEl, huntResultsMobileEl], `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`);
     setHtml([resultsEl, resultsMobileEl], `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`);
@@ -2715,4 +2731,5 @@ map.on('zoomend', () => {
     window.setTimeout(() => map.invalidateSize(), 0);
   }
 })();
+
 
