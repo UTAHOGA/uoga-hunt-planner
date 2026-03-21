@@ -1311,6 +1311,7 @@ let liveHuntUnitsLayer = null;
 let selectedBoundaryLayer = null;
 let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
+let boundaryHoverTooltip = null;
 let liveLayerSource = 'none';
 let huntBoundaryData = null;
 let huntResultsLimit = 100;
@@ -1968,6 +1969,38 @@ function findBoundaryLayerAtLatLng(latlng) {
   return found;
 }
 
+function getBoundaryHoverLabel(feature) {
+  const matches = findMatchingHuntsForBoundaryFeature(feature);
+  const unitNames = Array.from(new Set(matches.map(h => safe(getUnitName(h)).trim()).filter(Boolean)));
+  return unitNames[0] || safe(getBoundaryFeatureName(feature)).trim();
+}
+
+function hideBoundaryHoverTooltip() {
+  if (!boundaryHoverTooltip) return;
+  try { map.closeTooltip(boundaryHoverTooltip); } catch (e) {}
+  boundaryHoverTooltip = null;
+}
+
+function showBoundaryHoverTooltip(latlng, label) {
+  if (!latlng || !label) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+  if (!boundaryHoverTooltip) {
+    boundaryHoverTooltip = L.tooltip({
+      permanent: false,
+      sticky: true,
+      direction: 'top',
+      offset: [0, -6],
+      opacity: 0.96,
+      className: 'hunt-hover-tooltip'
+    });
+  }
+  boundaryHoverTooltip.setLatLng(latlng);
+  boundaryHoverTooltip.setContent(escapeHtml(label));
+  boundaryHoverTooltip.addTo(map);
+}
+
 function updateInteractivePanePriority() {
   if (!map || !map.getPane) return;
   const huntPane = map.getPane('huntPane');
@@ -1992,9 +2025,7 @@ function renderLiveHuntUnitsFeatures(features) {
     {
       pane: 'huntPane',
       onEachFeature: (feature, layer) => {
-        const matches = findMatchingHuntsForBoundaryFeature(feature);
-        const unitNames = Array.from(new Set(matches.map(h => safe(getUnitName(h)).trim()).filter(Boolean)));
-        const hoverLabel = unitNames[0] || safe(getBoundaryFeatureName(feature)).trim();
+        const hoverLabel = getBoundaryHoverLabel(feature);
 
         if (hoverLabel) {
           layer.bindTooltip(hoverLabel, {
@@ -3060,6 +3091,31 @@ map.on('click', e => {
   setClickInfoHtml(`<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
 });
 
+map.on('dblclick', e => {
+  if (!selectedHunt) return;
+  const boundaryLayer = findBoundaryLayerAtLatLng(e.latlng);
+  if (!boundaryLayer?.feature) return;
+  openBoundaryChoicePopup(boundaryLayer, boundaryLayer.feature, e);
+});
+
+map.on('mousemove', e => {
+  if (!toggleLiveUnits?.checked || !liveHuntUnitsLayer) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+  const boundaryLayer = findBoundaryLayerAtLatLng(e.latlng);
+  const label = boundaryLayer?.feature ? getBoundaryHoverLabel(boundaryLayer.feature) : '';
+  if (!label) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+  showBoundaryHoverTooltip(e.latlng, label);
+});
+
+map.on('mouseout', () => {
+  hideBoundaryHoverTooltip();
+});
+
 map.on('zoomend', () => {
   refreshLiveBoundaryFilter();
   updateContextualLandOverlayVisibility();
@@ -3146,6 +3202,7 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
 
 
 
