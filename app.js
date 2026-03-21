@@ -1167,7 +1167,7 @@ function zoomToHuntSelection(hunt) {
     return;
   }
 
-  zoomToSelectedBoundary();
+  return;
 }
 
 function isLikelyUtahCoordinate(lat, lng) {
@@ -2926,7 +2926,6 @@ function selectUnitByValue(unitValue) {
   refreshLiveBoundaryFilter();
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
-  zoomToSelectedBoundary();
 }
 
 function selectHuntByCode(huntCode) {
@@ -2956,7 +2955,6 @@ function selectHuntByCode(huntCode) {
   refreshLiveBoundaryFilter();
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
-  zoomToSelectedBoundary();
 }
 
 window.selectUnitByValue = selectUnitByValue;
@@ -3209,15 +3207,6 @@ map.on('click', e => {
     return;
   }
   setClickInfoHtml(`<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
-});
-
-map.on('dblclick', e => {
-  if (!selectedHunt) return;
-  openBoundaryChoicePopupAtLatLng(e.latlng, e);
-});
-
-map.on('mousemove', e => {
-  updateBoundaryHoverAtLatLng(e.latlng);
 });
 
 map.on('mouseout', () => {
