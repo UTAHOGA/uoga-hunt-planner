@@ -1849,8 +1849,21 @@ function renderLiveHuntUnitsFeatures(features) {
     { type: 'FeatureCollection', features },
     {
       pane: 'huntPane',
-      style: () => getHuntBoundaryStyle(),
       onEachFeature: (feature, layer) => {
+        const matches = findMatchingHuntsForBoundaryFeature(feature);
+        const unitNames = Array.from(new Set(matches.map(h => safe(getUnitName(h)).trim()).filter(Boolean)));
+        const hoverLabel = unitNames[0] || safe(getBoundaryFeatureName(feature)).trim();
+
+        if (hoverLabel) {
+          layer.bindTooltip(hoverLabel, {
+            sticky: true,
+            direction: 'top',
+            offset: [0, -6],
+            opacity: 0.96,
+            className: 'hunt-hover-tooltip'
+          });
+        }
+
         layer.on('click', evt => {
           if (!canSelectBoundaryByDoubleClick()) return;
           const matches = findMatchingHuntsForBoundaryFeature(feature);
@@ -1876,9 +1889,6 @@ function renderLiveHuntUnitsFeatures(features) {
             L.DomEvent.preventDefault(evt.originalEvent);
             L.DomEvent.stopPropagation(evt.originalEvent);
           }
-
-          const matchedHunt = matches[0];
-          selectHuntByCode(getHuntCode(matchedHunt));
         });
       }
     }
@@ -1927,8 +1937,7 @@ function buildUSFSLayer() {
     setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
   });
 
-  if (toggleUSFS?.checked) usfsDistrictLayer.addTo(map);
-  if (typeof usfsDistrictLayer.bringToFront === 'function') usfsDistrictLayer.bringToFront();
+  updateContextualLandOverlayVisibility();
 }
 
 function buildBLMLayer() {
@@ -1959,7 +1968,7 @@ function buildBLMLayer() {
     setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
   });
 
-  if (toggleBLM?.checked) blmDistrictLayer.addTo(map);
+  updateContextualLandOverlayVisibility();
 }
 
 function applyLiveBoundaryWhere(whereClause) {
@@ -1972,6 +1981,34 @@ function applyLiveBoundaryWhere(whereClause) {
   }
 
   renderLiveHuntUnitsFeatures(getFilteredBoundaryFeatures());
+}
+
+function shouldShowContextualLandOverlay() {
+  if (!map) return false;
+  const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 0;
+  if (selectedHunt) return zoom >= 8;
+  return zoom >= 9;
+}
+
+function updateContextualLandOverlayVisibility() {
+  const show = shouldShowContextualLandOverlay();
+
+  if (usfsDistrictLayer) {
+    if (toggleUSFS?.checked && show) {
+      if (!map.hasLayer(usfsDistrictLayer)) usfsDistrictLayer.addTo(map);
+      if (typeof usfsDistrictLayer.bringToFront === 'function') usfsDistrictLayer.bringToFront();
+    } else if (map.hasLayer(usfsDistrictLayer)) {
+      map.removeLayer(usfsDistrictLayer);
+    }
+  }
+
+  if (blmDistrictLayer) {
+    if (toggleBLM?.checked && show) {
+      if (!map.hasLayer(blmDistrictLayer)) blmDistrictLayer.addTo(map);
+    } else if (map.hasLayer(blmDistrictLayer)) {
+      map.removeLayer(blmDistrictLayer);
+    }
+  }
 }
 
 function clearSelectedBoundaryLayer() {
@@ -2711,11 +2748,7 @@ if (basemapSelect) {
 
     if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
     if (toggleLiveUnits?.checked && liveHuntUnitsLayer) liveHuntUnitsLayer.addTo(map);
-    if (toggleUSFS?.checked && usfsDistrictLayer) usfsDistrictLayer.addTo(map);
-    if (toggleBLM?.checked && blmDistrictLayer) blmDistrictLayer.addTo(map);
-    if (toggleUSFS?.checked && usfsDistrictLayer && typeof usfsDistrictLayer.bringToFront === 'function') {
-      usfsDistrictLayer.bringToFront();
-    }
+    updateContextualLandOverlayVisibility();
     if (selectedBoundaryLayer && typeof selectedBoundaryLayer.bringToFront === 'function') {
       selectedBoundaryLayer.bringToFront();
     }
@@ -2739,20 +2772,14 @@ if (toggleLiveUnits) {
 if (toggleUSFS) {
   toggleUSFS.addEventListener('change', () => {
     if (!usfsDistrictLayer) return;
-    if (toggleUSFS.checked) {
-      usfsDistrictLayer.addTo(map);
-      if (typeof usfsDistrictLayer.bringToFront === 'function') usfsDistrictLayer.bringToFront();
-    } else {
-      map.removeLayer(usfsDistrictLayer);
-    }
+    updateContextualLandOverlayVisibility();
   });
 }
 
 if (toggleBLM) {
   toggleBLM.addEventListener('change', () => {
     if (!blmDistrictLayer) return;
-    if (toggleBLM.checked) blmDistrictLayer.addTo(map);
-    else map.removeLayer(blmDistrictLayer);
+    updateContextualLandOverlayVisibility();
   });
 }
 
@@ -2890,6 +2917,7 @@ map.on('click', e => {
 
 map.on('zoomend', () => {
   refreshLiveBoundaryFilter();
+  updateContextualLandOverlayVisibility();
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
     selectedBoundaryLayer.setStyle({
       color: '#1d3f91',
@@ -2906,8 +2934,8 @@ map.on('zoomend', () => {
 
     if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Loading...</option>';
     if (unitFilter) unitFilter.innerHTML = '<option value="">Loading...</option>';
-    if (toggleUSFS) toggleUSFS.checked = false;
-    if (toggleBLM) toggleBLM.checked = false;
+    if (toggleUSFS) toggleUSFS.checked = true;
+    if (toggleBLM) toggleBLM.checked = true;
     setBuildMarker();
 
     await loadHuntData();
