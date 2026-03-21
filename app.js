@@ -5,8 +5,8 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-03';
-const GOOGLE_EMBED_API_KEY = 'AIzaSyC7XqvddiUy5weRDwsGBpVfW0sodNr9kUw';
+const APP_BUILD = 'build-2026-03-21-04';
+const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
 
 const outfitters = [
   {
