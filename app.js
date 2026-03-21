@@ -1303,10 +1303,6 @@ let liveHuntUnitsLayer = null;
 let selectedBoundaryLayer = null;
 let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
-let boundaryHoverTooltip = null;
-let lastBoundaryHoverLatLng = null;
-let lastBoundaryHoverPoint = null;
-let landOverlayClickTimer = null;
 let liveLayerSource = 'none';
 let huntBoundaryData = null;
 let huntResultsLimit = 100;
@@ -1964,12 +1960,6 @@ function findBoundaryLayerAtLatLng(latlng) {
   return found;
 }
 
-function getBoundaryHoverLabel(feature) {
-  const matches = findMatchingHuntsForBoundaryFeature(feature);
-  const unitNames = Array.from(new Set(matches.map(h => safe(getUnitName(h)).trim()).filter(Boolean)));
-  return unitNames[0] || safe(getBoundaryFeatureName(feature)).trim();
-}
-
 function isBoundaryFeatureSelected(feature) {
   if (!selectedHunt || !feature) return false;
   const matchSets = buildBoundaryMatchSets(selectedHunt);
@@ -1991,106 +1981,11 @@ function getBoundaryFeatureStyle(feature) {
   return getHuntBoundaryStyle();
 }
 
-function hideBoundaryHoverTooltip() {
-  lastBoundaryHoverLatLng = null;
-  lastBoundaryHoverPoint = null;
-  if (!boundaryHoverTooltip) return;
-  try { map.closeTooltip(boundaryHoverTooltip); } catch (e) {}
-  boundaryHoverTooltip = null;
-}
-
-function showBoundaryHoverTooltip(latlng, label) {
-  if (!latlng || !label) {
-    hideBoundaryHoverTooltip();
-    return;
-  }
-  if (!boundaryHoverTooltip) {
-    boundaryHoverTooltip = L.tooltip({
-      permanent: false,
-      sticky: true,
-      direction: 'top',
-      offset: [0, -6],
-      opacity: 0.96,
-      className: 'hunt-hover-tooltip'
-    });
-  }
-  boundaryHoverTooltip.setLatLng(latlng);
-  boundaryHoverTooltip.setContent(escapeHtml(label));
-  boundaryHoverTooltip.addTo(map);
-}
-
-function updateBoundaryHoverAtLatLng(latlng) {
-  if (!toggleLiveUnits?.checked || !liveHuntUnitsLayer) {
-    hideBoundaryHoverTooltip();
-    return;
-  }
-  lastBoundaryHoverLatLng = latlng || null;
-  lastBoundaryHoverPoint = latlng && map ? map.latLngToContainerPoint(latlng) : null;
-  const boundaryLayer = findBoundaryLayerAtLatLng(latlng);
-  const label = boundaryLayer?.feature ? getBoundaryHoverLabel(boundaryLayer.feature) : '';
-  if (!label) {
-    if (boundaryHoverTooltip) {
-      try { map.closeTooltip(boundaryHoverTooltip); } catch (e) {}
-      boundaryHoverTooltip = null;
-    }
-    return;
-  }
-  showBoundaryHoverTooltip(latlng, label);
-}
-
-function updateBoundaryHoverAtContainerPoint(containerPoint) {
-  if (!map || !containerPoint) {
-    hideBoundaryHoverTooltip();
-    return;
-  }
-  lastBoundaryHoverPoint = containerPoint;
-  const latlng = map.containerPointToLatLng(containerPoint);
-  updateBoundaryHoverAtLatLng(latlng);
-}
-
-function refreshBoundaryHoverTooltip() {
-  if (lastBoundaryHoverPoint) {
-    updateBoundaryHoverAtContainerPoint(lastBoundaryHoverPoint);
-    return;
-  }
-  if (!lastBoundaryHoverLatLng) return;
-  updateBoundaryHoverAtLatLng(lastBoundaryHoverLatLng);
-}
-
-function openBoundaryChoicePopupAtLatLng(latlng, evt) {
-  const boundaryLayer = findBoundaryLayerAtLatLng(latlng);
-  if (!boundaryLayer?.feature) return;
-  openBoundaryChoicePopup(boundaryLayer, boundaryLayer.feature, evt);
-}
-
-function openBoundaryChoicePopupAtContainerPoint(containerPoint, sourceEvent = null) {
-  if (!map || !containerPoint) return;
-  const latlng = map.containerPointToLatLng(containerPoint);
-  openBoundaryChoicePopupAtLatLng(latlng, {
-    latlng,
-    originalEvent: sourceEvent
-  });
-}
-
-function clearLandOverlayClickTimer() {
-  if (!landOverlayClickTimer) return;
-  window.clearTimeout(landOverlayClickTimer);
-  landOverlayClickTimer = null;
-}
-
-function scheduleLandOverlayClick(handler) {
-  clearLandOverlayClickTimer();
-  landOverlayClickTimer = window.setTimeout(() => {
-    landOverlayClickTimer = null;
-    handler();
-  }, 240);
-}
-
 function updateInteractivePanePriority() {
   if (!map || !map.getPane) return;
   const huntPane = map.getPane('huntPane');
   if (huntPane) {
-    huntPane.style.zIndex = '445';
+    huntPane.style.zIndex = selectedHunt ? '425' : '445';
   }
 }
 function renderLiveHuntUnitsFeatures(features) {
@@ -2111,37 +2006,8 @@ function renderLiveHuntUnitsFeatures(features) {
       pane: 'huntPane',
       style: feature => getBoundaryFeatureStyle(feature),
       onEachFeature: (feature, layer) => {
-        const hoverLabel = getBoundaryHoverLabel(feature);
-
-        if (hoverLabel) {
-          layer.bindTooltip(hoverLabel, {
-            sticky: true,
-            direction: 'top',
-            offset: [0, -6],
-            opacity: 0.96,
-            className: 'hunt-hover-tooltip'
-          });
-        }
-
         layer.on('click', evt => {
-          if (selectedHunt) return;
           openBoundaryChoicePopup(layer, feature, evt);
-        });
-        layer.on('dblclick', evt => {
-          if (!selectedHunt) {
-            L.DomEvent.stopPropagation(evt);
-            if (evt.originalEvent) {
-              L.DomEvent.preventDefault(evt.originalEvent);
-              L.DomEvent.stopPropagation(evt.originalEvent);
-            }
-            return;
-          }
-          openBoundaryChoicePopup(layer, feature, evt);
-          L.DomEvent.stopPropagation(evt);
-          if (evt.originalEvent) {
-            L.DomEvent.preventDefault(evt.originalEvent);
-            L.DomEvent.stopPropagation(evt.originalEvent);
-          }
         });
       }
     }
@@ -2189,30 +2055,14 @@ function buildUSFSLayer() {
 
   usfsDistrictLayer.on('click', evt => {
     if (!canOpenLandOverlayPopup()) return;
-    scheduleLandOverlayClick(() => {
-      setOverlayPriority('usfs', evt);
-      const p = evt.layer?.feature?.properties || {};
-      const forest = getUsfsLabel(p);
-      L.popup({ className: 'usfs-sign-popup' })
-        .setLatLng(evt.latlng)
-        .setContent(buildUsfsSignPopup(forest))
-        .openOn(map);
-      setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
-    });
-  });
-
-  usfsDistrictLayer.on('mousemove', evt => {
-    updateBoundaryHoverAtLatLng(evt.latlng);
-  });
-
-  usfsDistrictLayer.on('mouseout', () => {
-    hideBoundaryHoverTooltip();
-  });
-
-  usfsDistrictLayer.on('dblclick', evt => {
-    if (!selectedHunt) return;
-    clearLandOverlayClickTimer();
-    openBoundaryChoicePopupAtLatLng(evt.latlng, evt);
+    setOverlayPriority('usfs', evt);
+    const p = evt.layer?.feature?.properties || {};
+    const forest = getUsfsLabel(p);
+    L.popup({ className: 'usfs-sign-popup' })
+      .setLatLng(evt.latlng)
+      .setContent(buildUsfsSignPopup(forest))
+      .openOn(map);
+    setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2238,30 +2088,14 @@ function buildBLMLayer() {
   blmDistrictLayer.on('click', evt => {
     if (!canOpenLandOverlayPopup()) return;
     if (shouldYieldToOverlay('blm')) return;
-    scheduleLandOverlayClick(() => {
-      setOverlayPriority('blm', evt);
-      const p = evt.layer?.feature?.properties || {};
-      const unit = getBlmLabel(p);
-      L.popup({ className: 'blm-sign-popup' })
-        .setLatLng(evt.latlng)
-        .setContent(buildBlmSignPopup(unit, 'Utah District'))
-        .openOn(map);
-      setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
-    });
-  });
-
-  blmDistrictLayer.on('mousemove', evt => {
-    updateBoundaryHoverAtLatLng(evt.latlng);
-  });
-
-  blmDistrictLayer.on('mouseout', () => {
-    hideBoundaryHoverTooltip();
-  });
-
-  blmDistrictLayer.on('dblclick', evt => {
-    if (!selectedHunt) return;
-    clearLandOverlayClickTimer();
-    openBoundaryChoicePopupAtLatLng(evt.latlng, evt);
+    setOverlayPriority('blm', evt);
+    const p = evt.layer?.feature?.properties || {};
+    const unit = getBlmLabel(p);
+    L.popup({ className: 'blm-sign-popup' })
+      .setLatLng(evt.latlng)
+      .setContent(buildBlmSignPopup(unit, 'Utah District'))
+      .openOn(map);
+    setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2688,6 +2522,7 @@ function renderUnitResults() {
     const value = getUnitValue(h);
     const label = getUnitName(h) || value;
     if (!value) return;
+    if (selectedUnit && value === selectedUnit) return;
     if (!units.has(value)) units.set(value, h);
   });
 
