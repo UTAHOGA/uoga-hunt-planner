@@ -1970,6 +1970,27 @@ function getBoundaryHoverLabel(feature) {
   return unitNames[0] || safe(getBoundaryFeatureName(feature)).trim();
 }
 
+function isBoundaryFeatureSelected(feature) {
+  if (!selectedHunt || !feature) return false;
+  const matchSets = buildBoundaryMatchSets(selectedHunt);
+  const featureId = getBoundaryFeatureId(feature);
+  const featureName = safe(getBoundaryFeatureName(feature)).trim().toLowerCase();
+  return matchSets.names.has(featureName) || (featureId && matchSets.ids.has(featureId));
+}
+
+function getBoundaryFeatureStyle(feature) {
+  if (isBoundaryFeatureSelected(feature)) {
+    return {
+      color: '#6d3bbd',
+      weight: 2.4,
+      fillColor: '#b89af4',
+      fillOpacity: 0.18,
+      opacity: 1
+    };
+  }
+  return getHuntBoundaryStyle();
+}
+
 function hideBoundaryHoverTooltip() {
   lastBoundaryHoverLatLng = null;
   lastBoundaryHoverPoint = null;
@@ -2069,7 +2090,7 @@ function updateInteractivePanePriority() {
   if (!map || !map.getPane) return;
   const huntPane = map.getPane('huntPane');
   if (huntPane) {
-    huntPane.style.zIndex = selectedHunt ? '425' : '445';
+    huntPane.style.zIndex = '445';
   }
 }
 function renderLiveHuntUnitsFeatures(features) {
@@ -2088,6 +2109,7 @@ function renderLiveHuntUnitsFeatures(features) {
     { type: 'FeatureCollection', features },
     {
       pane: 'huntPane',
+      style: feature => getBoundaryFeatureStyle(feature),
       onEachFeature: (feature, layer) => {
         const hoverLabel = getBoundaryHoverLabel(feature);
 
@@ -2124,6 +2146,12 @@ function renderLiveHuntUnitsFeatures(features) {
       }
     }
   );
+
+  liveHuntUnitsLayer.eachLayer(layer => {
+    if (isBoundaryFeatureSelected(layer?.feature) && typeof layer.bringToFront === 'function') {
+      layer.bringToFront();
+    }
+  });
 
   liveLayerSource = 'local-boundary-file';
   if (toggleLiveUnits?.checked) liveHuntUnitsLayer.addTo(map);
@@ -2291,28 +2319,6 @@ function clearSelectedBoundaryLayer() {
 
 async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
-  const selectedFeatures = getSelectedBoundaryFeaturesForHunt(selectedHunt);
-  if (!Array.isArray(selectedFeatures) || !selectedFeatures.length || !window.L) return true;
-
-  selectedBoundaryLayer = L.geoJSON(
-    { type: 'FeatureCollection', features: selectedFeatures },
-      {
-        pane: 'selectedHuntPane',
-        interactive: false,
-        style: () => ({
-          color: '#6d3bbd',
-          weight: 2.4,
-          fillColor: '#b89af4',
-          fillOpacity: 0.18,
-          opacity: 1
-        })
-      }
-    );
-
-  selectedBoundaryLayer.addTo(map);
-  if (typeof selectedBoundaryLayer.bringToFront === 'function') {
-    selectedBoundaryLayer.bringToFront();
-  }
   return true;
 }
 
@@ -2929,8 +2935,6 @@ function selectHuntByCode(huntCode) {
 
   selectedHunt = hunt;
   selectedUnit = getUnitValue(hunt);
-
-  if (unitFilter) unitFilter.value = selectedUnit;
   setSelectedDisplay(
     getHuntTitle(hunt) || getUnitName(hunt) || huntCode,
     [
