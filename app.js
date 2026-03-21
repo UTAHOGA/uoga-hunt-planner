@@ -14,7 +14,7 @@ const outfitters = [
     listingName: 'Wild Eyez Outfitters',
     listingType: 'Outfitter',
     certLevel: 'CPO',
-    verificationStatus: 'Verified',
+    verificationStatus: 'Vetted',
     website: 'https://www.wildeyez.net',
     phone: '4358516480',
     email: 'tyler@wildeyez.net',
@@ -350,7 +350,8 @@ function getGoogleMapTypeForCurrentBasemap() {
   // Google Maps Embed API does not support a true "terrain" maptype here,
   // so we map our Terrain view to roadmap as the closest supported option.
   if (base === 'sat') return 'hybrid';
-  if (base === 'usgs') return 'roadmap';
+  if (base === 'topo') return 'roadmap';
+  if (base === 'topo') return 'roadmap';
   if (base === 'natgeo') return 'roadmap';
   return 'roadmap';
 }
@@ -1152,7 +1153,7 @@ function getHuntBoundaryStyle() {
 
 function updateMapAppearance() {
   if (!mapWrapEl || !basemapSelect) return;
-  const isTerrainLike = ['usgs'].includes(basemapSelect.value);
+  const isTerrainLike = ['topo'].includes(basemapSelect.value);
   mapWrapEl.classList.toggle('terrain-boost', isTerrainLike);
   if (googleShell) googleShell.classList.toggle('terrain-sync', isTerrainLike);
   if (dwrShell) dwrShell.classList.toggle('terrain-sync', isTerrainLike);
@@ -1192,10 +1193,6 @@ const basemaps = {
   outdoor: L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
-  ),
-  usgs: L.tileLayer(
-    'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
   ),
   positron: L.layerGroup([
     L.tileLayer(
@@ -1351,6 +1348,21 @@ function setBuildMarker() {
       `Choose filters or click a hunt unit to load hunt and outfitter results. (${APP_BUILD})`
     );
   }
+}
+
+function forcePageTop() {
+  try {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  } catch {}
+
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+  const scrollingElement = document.scrollingElement || document.documentElement || document.body;
+  if (scrollingElement) scrollingElement.scrollTop = 0;
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  if (document.body) document.body.scrollTop = 0;
 }
 
 function hasActiveHuntFilters() {
@@ -1990,6 +2002,34 @@ async function zoomToSelectedBoundary() {
   }
 
   try {
+    const localFeatures = getSelectedBoundaryFeaturesForHunt(selectedHunt);
+    if (Array.isArray(localFeatures) && localFeatures.length) {
+      const tempLayer = L.geoJSON(localFeatures);
+      const localBounds = tempLayer.getBounds();
+      if (localBounds && localBounds.isValid()) {
+        const tighterBounds = localBounds.pad(-0.07);
+        const mapWidth = map.getSize ? map.getSize().x : window.innerWidth;
+        const isDesktopLayout = mapWidth >= 1100;
+        const paddingTopLeft = isDesktopLayout ? [260, 70] : [12, 12];
+        const paddingBottomRight = isDesktopLayout ? [360, 170] : [12, 12];
+
+        if (typeof map.flyToBounds === 'function') {
+          map.flyToBounds(tighterBounds.isValid() ? tighterBounds : localBounds, {
+            paddingTopLeft,
+            paddingBottomRight,
+            duration: 2.8,
+            easeLinearity: 0.18
+          });
+        } else {
+          map.fitBounds(tighterBounds.isValid() ? tighterBounds : localBounds, {
+            paddingTopLeft,
+            paddingBottomRight
+          });
+        }
+        return;
+      }
+    }
+
     const huntCode = getHuntCode(selectedHunt);
     if (!huntCode) {
       map.setView([39.3, -111.7], 7);
@@ -2041,13 +2081,28 @@ async function zoomToSelectedBoundary() {
       return;
     }
 
-    map.fitBounds(
-      [
-        [ymin, xmin],
-        [ymax, xmax]
-      ],
-      { padding: [24, 24] }
-    );
+    const bounds = [
+      [ymin, xmin],
+      [ymax, xmax]
+    ];
+    const mapWidth = map.getSize ? map.getSize().x : window.innerWidth;
+    const isDesktopLayout = mapWidth >= 1100;
+    const paddingTopLeft = isDesktopLayout ? [260, 70] : [12, 12];
+    const paddingBottomRight = isDesktopLayout ? [360, 170] : [12, 12];
+
+    if (typeof map.flyToBounds === 'function') {
+      map.flyToBounds(bounds, {
+        paddingTopLeft,
+        paddingBottomRight,
+        duration: 2.8,
+        easeLinearity: 0.18
+      });
+    } else {
+      map.fitBounds(bounds, {
+        paddingTopLeft,
+        paddingBottomRight
+      });
+    }
   } catch (err) {
     console.error('Boundary zoom failed:', err);
     map.setView([39.3, -111.7], 7);
@@ -2320,11 +2375,9 @@ function renderAreaInfo(remoteInfo = null) {
           <div class="hunt-official-block">${weapon}</div>
           <div class="hunt-official-bar">Season Dates</div>
           <div class="hunt-official-block">${seasonEscaped}</div>
-          <div class="hunt-official-bar">Boundary Description</div>
-          <div class="hunt-official-block">${boundaryEscaped}<br><span style="color:var(--muted);">Center: ${centerText}</span></div>
           <div class="hunt-official-bar">Notes</div>
           <div class="hunt-official-block">
-            This is the active hunt on your U.O.G.A. planner map. Boundary highlighting, vetted outfitter matching, and 3D scout view all follow this selection.
+            This is the active hunt on your U.O.G.A. planner map. Boundary highlighting and vetted outfitter matching follow this selection.
             ${officialNote ? `<br><br>${escapeHtml(officialNote)}` : ''}
           </div>
         </div>
@@ -2432,6 +2485,7 @@ function selectUnitByValue(unitValue) {
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
   refreshSelectedHuntOfficialInfo(hunt);
+  zoomToSelectedBoundary();
 }
 
 function selectHuntByCode(huntCode) {
@@ -2462,6 +2516,7 @@ function selectHuntByCode(huntCode) {
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
   refreshSelectedHuntOfficialInfo(hunt);
+  zoomToSelectedBoundary();
 }
 
 window.selectUnitByValue = selectUnitByValue;
@@ -2536,13 +2591,13 @@ if (unitFilter) {
 }
 
 if (basemapSelect) {
-  basemapSelect.value = 'usgs';
+  basemapSelect.value = 'topo';
   updateMapAppearance();
   basemapSelect.addEventListener('change', () => {
     Object.values(basemaps).forEach(layer => {
       if (map.hasLayer(layer)) map.removeLayer(layer);
     });
-    (basemaps[basemapSelect.value] || basemaps.usgs).addTo(map);
+    (basemaps[basemapSelect.value] || basemaps.topo).addTo(map);
     updateMapAppearance();
     updateGoogleMapsEmbed(selectedHunt);
     updateCesiumView(selectedHunt);
@@ -2598,202 +2653,4 @@ if (toggleUnits) toggleUnits.addEventListener('change', renderUnitCenters);
 
 [toggleSITLA, toggleState, togglePrivate].forEach(el => {
   if (!el) return;
-  el.addEventListener('change', renderOwnershipPlaceholders);
-});
-
-[toggleOutfitters, toggleCPO, toggleCPG].forEach(el => {
-  if (!el) return;
-  el.addEventListener('change', () => {
-    renderOutfitters();
-    renderOutfitterResults();
-  });
-});
-
-if (openBoundaryBtn) {
-  openBoundaryBtn.addEventListener('click', () => {
-    updateDwrBoundaryEmbed(selectedHunt, { scrollIntoView: true });
-  });
-}
-
-if (openAboutBtn) {
-  openAboutBtn.addEventListener('click', () => {
-    setAboutModalOpen(true);
-  });
-}
-
-if (closeAboutBtn) {
-  closeAboutBtn.addEventListener('click', () => {
-    setAboutModalOpen(false);
-  });
-}
-
-if (aboutOkBtn) {
-  aboutOkBtn.addEventListener('click', () => {
-    setAboutModalOpen(false);
-    try {
-      localStorage.setItem('uogaHuntPlannerInfoSeen', '1');
-    } catch (e) {}
-  });
-}
-
-if (toggleGooglePanelBtn) {
-  toggleGooglePanelBtn.addEventListener('click', () => {
-    toggleEmbeddedPanel(toggleGooglePanelBtn, googleMapsEmbed);
-  });
-}
-
-if (toggleDwrPanelBtn) {
-  toggleDwrPanelBtn.addEventListener('click', () => {
-    toggleEmbeddedPanel(toggleDwrPanelBtn, dwrBoundaryEmbed);
-  });
-}
-
-if (toggleCesiumPanelBtn) {
-  toggleCesiumPanelBtn.addEventListener('click', () => {
-    toggleEmbeddedPanel(toggleCesiumPanelBtn, cesiumContainer);
-    if (cesiumViewer) {
-      window.setTimeout(() => cesiumViewer.resize(), 200);
-    }
-  });
-}
-
-if (cesiumZoomBtn) {
-  cesiumZoomBtn.addEventListener('click', () => {
-    zoomCesiumToSelectedHunt();
-  });
-}
-
-if (cesiumTiltBtn) {
-  cesiumTiltBtn.addEventListener('click', () => {
-    toggleCesiumTilt();
-  });
-}
-
-if (cesiumResetBtn) {
-  cesiumResetBtn.addEventListener('click', () => {
-    resetCesiumView();
-  });
-}
-
-if (cesiumTerrainBtn) {
-  cesiumTerrainBtn.addEventListener('click', async () => {
-    await enableCesiumTerrainRelief();
-  });
-}
-
-if (resetBtn) resetBtn.addEventListener('click', resetPlanner);
-
-if (toggleResultsTrayBtn && resultsTrayEl) {
-  toggleResultsTrayBtn.addEventListener('click', () => {
-    resultsTrayEl.classList.toggle('collapsed');
-    toggleResultsTrayBtn.textContent = resultsTrayEl.classList.contains('collapsed') ? '˄' : '˅';
-  });
-}
-
-attachHuntResultsInteraction(huntResultsEl);
-attachHuntResultsInteraction(huntResultsMobileEl);
-
-document.addEventListener('click', e => {
-  const target = e.target;
-  if (!(target instanceof HTMLElement)) return;
-  if (target === aboutModal) {
-    setAboutModalOpen(false);
-    return;
-  }
-  const unitBtn = target.closest('.js-select-unit');
-  if (unitBtn) {
-    const unitValue = safe(unitBtn.getAttribute('data-unit')).trim();
-    if (unitValue) selectUnitByValue(unitValue);
-    return;
-  }
-  const dwrBtn = target.closest('[data-action="load-dwr-map-here"]');
-  if (dwrBtn) {
-    updateDwrBoundaryEmbed(selectedHunt, { forceFrame: true, scrollIntoView: true });
-  }
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && aboutModal?.classList.contains('is-open')) {
-    setAboutModalOpen(false);
-  }
-});
-
-map.on('click', e => {
-  if (suppressNextMapClickInfo) {
-    suppressNextMapClickInfo = false;
-    return;
-  }
-  setClickInfoHtml(`<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
-});
-
-map.on('zoomend', () => {
-  refreshLiveBoundaryFilter();
-  if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
-    selectedBoundaryLayer.setStyle({
-      color: '#1d3f91',
-      weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
-      fillColor: '#9cb4f2',
-      fillOpacity: 0.18
-    });
-  }
-});
-
-(async function init() {
-  try {
-    if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Loading...</option>';
-    if (unitFilter) unitFilter.innerHTML = '<option value="">Loading...</option>';
-    if (toggleUSFS) toggleUSFS.checked = false;
-    if (toggleBLM) toggleBLM.checked = false;
-    setBuildMarker();
-
-    await loadHuntData();
-    await loadBoundaryData();
-
-    refreshSelectionMatrix();
-
-    buildLiveHuntUnitsLayer();
-    buildUSFSLayer();
-    buildBLMLayer();
-
-    await refreshLiveBoundaryFilter();
-
-    renderUtahOutline();
-    renderUnitCenters();
-    renderOwnershipPlaceholders();
-    renderAreaInfo();
-    renderOutfitters();
-    renderOutfitterResults();
-    renderUnitResults();
-    renderHuntResults();
-    initCesiumViewer();
-    updateGoogleMapsEmbed();
-    updateCesiumView();
-    updateDwrBoundaryEmbed();
-    try {
-      if (!localStorage.getItem('uogaHuntPlannerInfoSeen')) {
-        setAboutModalOpen(true);
-      }
-    } catch (e) {
-      setAboutModalOpen(true);
-    }
-    window.setTimeout(() => map.invalidateSize(), 0);
-    if (cesiumViewer) {
-      window.setTimeout(() => cesiumViewer.resize(), 0);
-    }
-  } catch (err) {
-    console.error('Init failed:', err);
-
-    if (speciesFilter) speciesFilter.innerHTML = '<option value="All Species">Load Failed</option>';
-    if (unitFilter) unitFilter.innerHTML = '<option value="">Load Failed</option>';
-
-    setHtml([huntResultsEl, huntResultsMobileEl], `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`);
-    setHtml([resultsEl, resultsMobileEl], `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`);
-    setHtml([areaInfoEl, areaInfoMobileEl], 'App failed to initialize. Open browser console for details.');
-    if (unitResultsEl) {
-      unitResultsEl.className = 'unit-list empty';
-      unitResultsEl.innerHTML = `Unable to load hunt units: ${escapeHtml(err.message || String(err))}`;
-    }
-    setBuildMarker();
-    window.setTimeout(() => map.invalidateSize(), 0);
-  }
-})();
+  el.addEventListener('change', renderOw
