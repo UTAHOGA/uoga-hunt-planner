@@ -1,7 +1,7 @@
 {
   "metadata": {
     "description": "Utah 2026 pronghorn hunt opportunities dataset built from the official Utah DWR hunt table.",
-    "status": "pronghorn_master_structured",
+    "status": "pronghorn_master_unified",
     "species": "Pronghorn",
     "year": 2026,
     "recordCount": 202,
@@ -46,7 +46,7 @@
       "boundaryId": "15",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5002",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5027",
@@ -63,7 +63,7 @@
       "boundaryId": "15",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5027",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -97,7 +97,7 @@
       "boundaryId": "24",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5003",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5028",
@@ -114,7 +114,7 @@
       "boundaryId": "24",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5028",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1012",
@@ -131,7 +131,7 @@
       "boundaryId": "24",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1012",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -165,7 +165,7 @@
       "boundaryId": "25",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5004",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5029",
@@ -182,7 +182,7 @@
       "boundaryId": "25",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5029",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -216,7 +216,7 @@
       "boundaryId": "27",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5005",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5030",
@@ -233,7 +233,7 @@
       "boundaryId": "27",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5030",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1000",
@@ -250,7 +250,7 @@
       "boundaryId": "27",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1000",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -284,7 +284,7 @@
       "boundaryId": "27",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5080",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5073",
@@ -301,7 +301,7 @@
       "boundaryId": "38",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5073",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5074",
@@ -318,7 +318,7 @@
       "boundaryId": "38",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5074",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5075",
@@ -335,7 +335,7 @@
       "boundaryId": "38",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5075",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1033",
@@ -352,7 +352,7 @@
       "boundaryId": "110",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1033",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5011",
@@ -369,7 +369,7 @@
       "boundaryId": "129",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5011",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5037",
@@ -386,7 +386,7 @@
       "boundaryId": "129",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5037",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -420,7 +420,7 @@
       "boundaryId": "129",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5059",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5039",
@@ -437,7 +437,7 @@
       "boundaryId": "138",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5039",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1005",
@@ -454,7 +454,7 @@
       "boundaryId": "138",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1005",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -488,7 +488,7 @@
       "boundaryId": "140",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1037",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1038",
@@ -505,7 +505,7 @@
       "boundaryId": "142",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1038",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5019",
@@ -522,7 +522,7 @@
       "boundaryId": "244",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5019",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5050",
@@ -539,7 +539,7 @@
       "boundaryId": "244",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5050",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -573,7 +573,7 @@
       "boundaryId": "245",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5020",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5051",
@@ -590,7 +590,7 @@
       "boundaryId": "245",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5051",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -624,7 +624,7 @@
       "boundaryId": "246",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5021",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5052",
@@ -641,7 +641,7 @@
       "boundaryId": "246",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5052",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -675,7 +675,7 @@
       "boundaryId": "277",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5038",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5053",
@@ -692,7 +692,7 @@
       "boundaryId": "277",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5053",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -726,7 +726,7 @@
       "boundaryId": "289",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5012",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5040",
@@ -743,7 +743,7 @@
       "boundaryId": "289",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5040",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -777,7 +777,7 @@
       "boundaryId": "289",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5066",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5045",
@@ -794,7 +794,7 @@
       "boundaryId": "443",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5045",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5055",
@@ -811,7 +811,7 @@
       "boundaryId": "443",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5055",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -845,7 +845,7 @@
       "boundaryId": "528",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5301",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1010",
@@ -862,7 +862,7 @@
       "boundaryId": "528",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1010",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1049",
@@ -879,7 +879,7 @@
       "boundaryId": "537",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1049",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5315",
@@ -896,7 +896,7 @@
       "boundaryId": "537",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5315",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1016",
@@ -913,7 +913,7 @@
       "boundaryId": "537",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1016",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5338",
@@ -930,7 +930,7 @@
       "boundaryId": "545",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5338",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5325",
@@ -947,7 +947,7 @@
       "boundaryId": "557",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5325",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5314",
@@ -964,7 +964,7 @@
       "boundaryId": "558",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5314",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1031",
@@ -981,7 +981,7 @@
       "boundaryId": "558",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1031",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5310",
@@ -998,7 +998,7 @@
       "boundaryId": "562",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5310",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5304",
@@ -1015,7 +1015,7 @@
       "boundaryId": "565",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5304",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1021",
@@ -1032,7 +1032,7 @@
       "boundaryId": "565",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1021",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5302",
@@ -1049,7 +1049,7 @@
       "boundaryId": "568",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5302",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1011",
@@ -1066,7 +1066,7 @@
       "boundaryId": "568",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1011",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5308",
@@ -1083,7 +1083,7 @@
       "boundaryId": "576",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5308",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1015",
@@ -1100,7 +1100,7 @@
       "boundaryId": "576",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1015",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1047",
@@ -1117,7 +1117,7 @@
       "boundaryId": "581",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1047",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5300",
@@ -1134,7 +1134,7 @@
       "boundaryId": "581",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5300",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1032",
@@ -1151,7 +1151,7 @@
       "boundaryId": "581",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1032",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5309",
@@ -1168,7 +1168,7 @@
       "boundaryId": "585",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5309",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5346",
@@ -1185,7 +1185,7 @@
       "boundaryId": "589",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5346",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5018",
@@ -1202,7 +1202,7 @@
       "boundaryId": "625",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5018",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5024",
@@ -1219,7 +1219,7 @@
       "boundaryId": "625",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5024",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5049",
@@ -1236,7 +1236,7 @@
       "boundaryId": "625",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5049",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -1270,7 +1270,7 @@
       "boundaryId": "628",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5000",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5025",
@@ -1287,7 +1287,7 @@
       "boundaryId": "628",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5025",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -1321,7 +1321,7 @@
       "boundaryId": "628",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1036",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5009",
@@ -1338,7 +1338,7 @@
       "boundaryId": "688",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5009",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5035",
@@ -1355,7 +1355,7 @@
       "boundaryId": "688",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5035",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -1389,7 +1389,7 @@
       "boundaryId": "703",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1054",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1055",
@@ -1406,7 +1406,7 @@
       "boundaryId": "703",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1055",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1056",
@@ -1423,7 +1423,7 @@
       "boundaryId": "703",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1056",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5007",
@@ -1440,7 +1440,7 @@
       "boundaryId": "715",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5007",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5022",
@@ -1457,7 +1457,7 @@
       "boundaryId": "715",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5022",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5032",
@@ -1474,7 +1474,7 @@
       "boundaryId": "715",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5032",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1001",
@@ -1491,7 +1491,7 @@
       "boundaryId": "715",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1001",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1002",
@@ -1508,7 +1508,7 @@
       "boundaryId": "715",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1002",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1003",
@@ -1525,7 +1525,7 @@
       "boundaryId": "715",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1003",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -1559,7 +1559,7 @@
       "boundaryId": "717",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5010",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5036",
@@ -1576,7 +1576,7 @@
       "boundaryId": "717",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5036",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5041",
@@ -1593,7 +1593,7 @@
       "boundaryId": "718",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5041",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5054",
@@ -1610,7 +1610,7 @@
       "boundaryId": "718",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5054",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -1644,7 +1644,7 @@
       "boundaryId": "718",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1039",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5061",
@@ -1661,7 +1661,7 @@
       "boundaryId": "718",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5061",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5014",
@@ -1678,7 +1678,7 @@
       "boundaryId": "719",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5014",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5023",
@@ -1695,7 +1695,7 @@
       "boundaryId": "719",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5023",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5043",
@@ -1712,7 +1712,7 @@
       "boundaryId": "719",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5043",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -1746,7 +1746,7 @@
       "boundaryId": "721",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5312",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1022",
@@ -1763,7 +1763,7 @@
       "boundaryId": "721",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1022",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1004",
@@ -1780,7 +1780,7 @@
       "boundaryId": "725",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1004",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5067",
@@ -1797,7 +1797,7 @@
       "boundaryId": "873",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5067",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5063",
@@ -1814,7 +1814,7 @@
       "boundaryId": "873",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5063",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5064",
@@ -1831,7 +1831,7 @@
       "boundaryId": "873",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5064",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1057",
@@ -1848,7 +1848,7 @@
       "boundaryId": "873",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1057",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1058",
@@ -1865,7 +1865,7 @@
       "boundaryId": "873",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1058",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5339",
@@ -1882,7 +1882,7 @@
       "boundaryId": "876",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5339",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1043",
@@ -1899,7 +1899,7 @@
       "boundaryId": "882",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1043",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5341",
@@ -1916,7 +1916,7 @@
       "boundaryId": "891",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5341",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1044",
@@ -1933,7 +1933,7 @@
       "boundaryId": "895",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1044",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5342",
@@ -1950,7 +1950,7 @@
       "boundaryId": "906",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5342",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1046",
@@ -1967,7 +1967,7 @@
       "boundaryId": "918",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1046",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5345",
@@ -1984,7 +1984,7 @@
       "boundaryId": "918",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5345",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1053",
@@ -2001,7 +2001,7 @@
       "boundaryId": "918",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1053",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5343",
@@ -2018,7 +2018,7 @@
       "boundaryId": "919",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5343",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1059",
@@ -2035,7 +2035,7 @@
       "boundaryId": "940",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1059",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1060",
@@ -2052,7 +2052,7 @@
       "boundaryId": "940",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1060",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1006",
@@ -2069,7 +2069,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1006",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1019",
@@ -2086,7 +2086,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1019",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1020",
@@ -2103,7 +2103,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1020",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5333",
@@ -2120,7 +2120,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5333",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5334",
@@ -2137,7 +2137,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5334",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5335",
@@ -2154,7 +2154,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5335",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2188,7 +2188,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5076",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5077",
@@ -2205,7 +2205,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5077",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5078",
@@ -2222,7 +2222,7 @@
       "boundaryId": "171",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5078",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5044",
@@ -2239,7 +2239,7 @@
       "boundaryId": "186",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5044",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2273,7 +2273,7 @@
       "boundaryId": "186",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5058",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2307,7 +2307,7 @@
       "boundaryId": "201",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5337",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1052",
@@ -2324,7 +2324,7 @@
       "boundaryId": "201",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1052",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1041",
@@ -2341,7 +2341,7 @@
       "boundaryId": "201",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1041",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5015",
@@ -2358,7 +2358,7 @@
       "boundaryId": "202",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5015",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5046",
@@ -2375,7 +2375,7 @@
       "boundaryId": "202",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5046",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5056",
@@ -2392,7 +2392,7 @@
       "boundaryId": "202",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5056",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5017",
@@ -2409,7 +2409,7 @@
       "boundaryId": "208",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5017",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5048",
@@ -2426,7 +2426,7 @@
       "boundaryId": "208",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5048",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2460,7 +2460,7 @@
       "boundaryId": "208",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5072",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1008",
@@ -2477,7 +2477,7 @@
       "boundaryId": "217",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1008",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1009",
@@ -2494,7 +2494,7 @@
       "boundaryId": "217",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1009",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5008",
@@ -2511,7 +2511,7 @@
       "boundaryId": "81",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5008",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5033",
@@ -2528,7 +2528,7 @@
       "boundaryId": "81",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5033",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1027",
@@ -2545,7 +2545,7 @@
       "boundaryId": "81",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1027",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2579,7 +2579,7 @@
       "boundaryId": "81",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1034",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1035",
@@ -2596,7 +2596,7 @@
       "boundaryId": "81",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1035",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5065",
@@ -2613,7 +2613,7 @@
       "boundaryId": "81",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5065",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1028",
@@ -2630,7 +2630,7 @@
       "boundaryId": "90",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1028",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1029",
@@ -2647,7 +2647,7 @@
       "boundaryId": "90",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1029",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5034",
@@ -2664,7 +2664,7 @@
       "boundaryId": "97",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5034",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2698,7 +2698,7 @@
       "boundaryId": "590",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5306",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1013",
@@ -2715,7 +2715,7 @@
       "boundaryId": "590",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1013",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5305",
@@ -2732,7 +2732,7 @@
       "boundaryId": "603",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5305",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5013",
@@ -2749,7 +2749,7 @@
       "boundaryId": "636",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5013",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5042",
@@ -2766,7 +2766,7 @@
       "boundaryId": "636",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5042",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2800,7 +2800,7 @@
       "boundaryId": "636",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5062",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1042",
@@ -2817,7 +2817,7 @@
       "boundaryId": "636",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1042",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5001",
@@ -2834,7 +2834,7 @@
       "boundaryId": "667",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5001",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5026",
@@ -2851,7 +2851,7 @@
       "boundaryId": "667",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5026",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1018",
@@ -2868,7 +2868,7 @@
       "boundaryId": "453",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1018",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5331",
@@ -2885,7 +2885,7 @@
       "boundaryId": "453",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5331",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5332",
@@ -2902,7 +2902,7 @@
       "boundaryId": "453",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5332",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -2929,14 +2929,14 @@
       "sex": "Buck",
       "weapon": "",
       "huntType": "Limited Entry",
-      "unitName": "Statewide Conservation",
-      "unitCode": "statewide-conservation",
+      "unitName": "Pronghorn - Statewide Conservation",
+      "unitCode": "pronghorn-statewide-conservation",
       "region": "Utah",
       "seasonLabel": "",
       "boundaryId": "454",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5057",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5016",
@@ -2953,7 +2953,7 @@
       "boundaryId": "461",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5016",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5047",
@@ -2970,7 +2970,7 @@
       "boundaryId": "461",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5047",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -3004,7 +3004,7 @@
       "boundaryId": "461",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5060",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1040",
@@ -3021,7 +3021,7 @@
       "boundaryId": "461",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1040",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1048",
@@ -3038,7 +3038,7 @@
       "boundaryId": "509",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1048",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5311",
@@ -3055,7 +3055,7 @@
       "boundaryId": "509",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5311",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1045",
@@ -3072,7 +3072,7 @@
       "boundaryId": "509",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1045",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5303",
@@ -3089,7 +3089,7 @@
       "boundaryId": "522",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5303",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5307",
@@ -3106,7 +3106,7 @@
       "boundaryId": "739",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5307",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1014",
@@ -3123,7 +3123,7 @@
       "boundaryId": "739",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1014",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5006",
@@ -3140,7 +3140,7 @@
       "boundaryId": "755",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5006",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5031",
@@ -3157,7 +3157,7 @@
       "boundaryId": "755",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5031",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1017",
@@ -3174,7 +3174,7 @@
       "boundaryId": "755",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1017",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB1000",
@@ -3208,7 +3208,7 @@
       "boundaryId": "755",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5079",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5313",
@@ -3225,7 +3225,7 @@
       "boundaryId": "805",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5313",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5330",
@@ -3242,7 +3242,7 @@
       "boundaryId": "806",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5330",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1023",
@@ -3259,7 +3259,7 @@
       "boundaryId": "806",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1023",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1007",
@@ -3276,7 +3276,7 @@
       "boundaryId": "813",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1007",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1030",
@@ -3293,7 +3293,7 @@
       "boundaryId": "813",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1030",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5327",
@@ -3310,7 +3310,7 @@
       "boundaryId": "824",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5327",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1050",
@@ -3327,7 +3327,7 @@
       "boundaryId": "824",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1050",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1025",
@@ -3344,7 +3344,7 @@
       "boundaryId": "824",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1025",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5328",
@@ -3361,7 +3361,7 @@
       "boundaryId": "826",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5328",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1051",
@@ -3378,7 +3378,7 @@
       "boundaryId": "826",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1051",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1026",
@@ -3395,7 +3395,7 @@
       "boundaryId": "826",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1026",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5329",
@@ -3412,7 +3412,7 @@
       "boundaryId": "829",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5329",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PD1024",
@@ -3429,7 +3429,7 @@
       "boundaryId": "829",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PD1024",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Antlerless"
+      "huntCategory": "Pronghorn"
     },
     {
       "huntCode": "PB5326",
@@ -3446,7 +3446,7 @@
       "boundaryId": "830",
       "boundaryLink": "https://dwrapps.utah.gov/huntboundary/hbstart?HN=PB5326",
       "sourceGuide": "Official Utah DWR hunt table",
-      "huntCategory": "Buck"
+      "huntCategory": "Pronghorn"
     }
   ]
 }
