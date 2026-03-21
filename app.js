@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-17-01';
+const APP_BUILD = 'build-2026-03-20-01';
 
 const outfitters = [
   {
@@ -220,6 +220,8 @@ const selectedTitle = document.getElementById('selectedTitle');
 const selectedMeta = document.getElementById('selectedMeta');
 const selectedTitleMobile = document.getElementById('selectedTitleMobile');
 const selectedMetaMobile = document.getElementById('selectedMetaMobile');
+const googleMapsEmbed = document.getElementById('googleMapsEmbed');
+const googleMapsMeta = document.getElementById('googleMapsMeta');
 const huntResultsEl = document.getElementById('huntResults');
 const huntResultsMobileEl = document.getElementById('huntResultsMobile');
 const resultsEl = document.getElementById('results');
@@ -286,6 +288,22 @@ function setSelectedDisplay(title, meta) {
   if (selectedMeta) selectedMeta.textContent = resolvedMeta;
   if (selectedTitleMobile) selectedTitleMobile.textContent = resolvedTitle;
   if (selectedMetaMobile) selectedMetaMobile.textContent = resolvedMeta;
+}
+
+function updateGoogleMapsEmbed(hunt = null) {
+  if (!googleMapsEmbed) return;
+
+  const query = hunt
+    ? [getUnitName(hunt), getSpeciesRaw(hunt), 'Utah'].filter(Boolean).join(' ')
+    : 'Utah';
+
+  googleMapsEmbed.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+
+  if (googleMapsMeta) {
+    googleMapsMeta.textContent = hunt
+      ? `Showing Google Maps for ${getUnitName(hunt) || getHuntTitle(hunt)}. This is a supplemental reference view.`
+      : 'Showing a general Utah view. Select a hunt to update this map.';
+  }
 }
 
 function setHtml(targets, html) {
@@ -1615,6 +1633,7 @@ function selectUnitByValue(unitValue) {
   renderOutfitterResults();
   renderUnitResults();
   renderHuntResults();
+  updateGoogleMapsEmbed(hunt);
   refreshLiveBoundaryFilter();
 }
 
@@ -1642,6 +1661,7 @@ function selectHuntByCode(huntCode) {
   renderOutfitterResults();
   renderUnitResults();
   renderHuntResults();
+  updateGoogleMapsEmbed(hunt);
   refreshLiveBoundaryFilter();
 }
 
@@ -1674,6 +1694,7 @@ function resetPlanner() {
   renderOutfitterResults();
   renderUnitResults();
   renderHuntResults();
+  updateGoogleMapsEmbed();
   refreshLiveBoundaryFilter();
 }
 
@@ -1703,6 +1724,7 @@ if (unitFilter) {
       renderOutfitterResults();
       renderUnitResults();
       renderHuntResults();
+      updateGoogleMapsEmbed();
       refreshLiveBoundaryFilter();
       return;
     }
@@ -1860,6 +1882,7 @@ map.on('zoomend', () => {
     renderOutfitterResults();
     renderUnitResults();
     renderHuntResults();
+    updateGoogleMapsEmbed();
     window.setTimeout(() => map.invalidateSize(), 0);
   } catch (err) {
     console.error('Init failed:', err);
