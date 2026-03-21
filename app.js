@@ -1192,23 +1192,15 @@ function matchesFilter(selected, value) {
 
 function getHuntBoundaryStyle() {
   const zoom = map.getZoom();
-  const hasSelection = !!selectedHunt;
-
   if (zoom <= 6) {
-    return hasSelection
-      ? { color: '#1d3f91', weight: 2.2, fillColor: '#a8bdf3', fillOpacity: 0.20 }
-      : { color: '#3653b3', weight: 1.2, fillColor: '#d6def7', fillOpacity: 0.12 };
+    return { color: '#3653b3', weight: 1.2, fillColor: '#d6def7', fillOpacity: 0.12 };
   }
 
   if (zoom <= 8) {
-    return hasSelection
-      ? { color: '#1d3f91', weight: 3, fillColor: '#9cb4f2', fillOpacity: 0.24 }
-      : { color: '#3653b3', weight: 2, fillColor: '#d6def7', fillOpacity: 0.18 };
+    return { color: '#3653b3', weight: 2, fillColor: '#d6def7', fillOpacity: 0.18 };
   }
 
-  return hasSelection
-    ? { color: '#1d3f91', weight: 4, fillColor: '#8da9ef', fillOpacity: 0.30 }
-    : { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.28 };
+  return { color: '#3653b3', weight: 3.2, fillColor: '#d6def7', fillOpacity: 0.28 };
 }
 
 function updateMapAppearance() {
@@ -1313,6 +1305,7 @@ let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
 let boundaryHoverTooltip = null;
 let lastBoundaryHoverLatLng = null;
+let lastBoundaryHoverPoint = null;
 let landOverlayClickTimer = null;
 let liveLayerSource = 'none';
 let huntBoundaryData = null;
@@ -1979,6 +1972,7 @@ function getBoundaryHoverLabel(feature) {
 
 function hideBoundaryHoverTooltip() {
   lastBoundaryHoverLatLng = null;
+  lastBoundaryHoverPoint = null;
   if (!boundaryHoverTooltip) return;
   try { map.closeTooltip(boundaryHoverTooltip); } catch (e) {}
   boundaryHoverTooltip = null;
@@ -2010,6 +2004,7 @@ function updateBoundaryHoverAtLatLng(latlng) {
     return;
   }
   lastBoundaryHoverLatLng = latlng || null;
+  lastBoundaryHoverPoint = latlng && map ? map.latLngToContainerPoint(latlng) : null;
   const boundaryLayer = findBoundaryLayerAtLatLng(latlng);
   const label = boundaryLayer?.feature ? getBoundaryHoverLabel(boundaryLayer.feature) : '';
   if (!label) {
@@ -2022,7 +2017,21 @@ function updateBoundaryHoverAtLatLng(latlng) {
   showBoundaryHoverTooltip(latlng, label);
 }
 
+function updateBoundaryHoverAtContainerPoint(containerPoint) {
+  if (!map || !containerPoint) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+  lastBoundaryHoverPoint = containerPoint;
+  const latlng = map.containerPointToLatLng(containerPoint);
+  updateBoundaryHoverAtLatLng(latlng);
+}
+
 function refreshBoundaryHoverTooltip() {
+  if (lastBoundaryHoverPoint) {
+    updateBoundaryHoverAtContainerPoint(lastBoundaryHoverPoint);
+    return;
+  }
   if (!lastBoundaryHoverLatLng) return;
   updateBoundaryHoverAtLatLng(lastBoundaryHoverLatLng);
 }
@@ -2031,6 +2040,15 @@ function openBoundaryChoicePopupAtLatLng(latlng, evt) {
   const boundaryLayer = findBoundaryLayerAtLatLng(latlng);
   if (!boundaryLayer?.feature) return;
   openBoundaryChoicePopup(boundaryLayer, boundaryLayer.feature, evt);
+}
+
+function openBoundaryChoicePopupAtContainerPoint(containerPoint, sourceEvent = null) {
+  if (!map || !containerPoint) return;
+  const latlng = map.containerPointToLatLng(containerPoint);
+  openBoundaryChoicePopupAtLatLng(latlng, {
+    latlng,
+    originalEvent: sourceEvent
+  });
 }
 
 function clearLandOverlayClickTimer() {
@@ -2147,9 +2165,10 @@ function buildUSFSLayer() {
       setOverlayPriority('usfs', evt);
       const p = evt.layer?.feature?.properties || {};
       const forest = getUsfsLabel(p);
-      evt.layer.bindPopup(buildUsfsSignPopup(forest), {
-        className: 'usfs-sign-popup'
-      }).openPopup();
+      L.popup({ className: 'usfs-sign-popup' })
+        .setLatLng(evt.latlng)
+        .setContent(buildUsfsSignPopup(forest))
+        .openOn(map);
       setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
     });
   });
@@ -2195,9 +2214,10 @@ function buildBLMLayer() {
       setOverlayPriority('blm', evt);
       const p = evt.layer?.feature?.properties || {};
       const unit = getBlmLabel(p);
-      evt.layer.bindPopup(buildBlmSignPopup(unit, 'Utah District'), {
-        className: 'blm-sign-popup'
-      }).openPopup();
+      L.popup({ className: 'blm-sign-popup' })
+        .setLatLng(evt.latlng)
+        .setContent(buildBlmSignPopup(unit, 'Utah District'))
+        .openOn(map);
       setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
     });
   });
@@ -2271,6 +2291,28 @@ function clearSelectedBoundaryLayer() {
 
 async function renderSelectedBoundaryOnly(whereClause) {
   clearSelectedBoundaryLayer();
+  const selectedFeatures = getSelectedBoundaryFeaturesForHunt(selectedHunt);
+  if (!Array.isArray(selectedFeatures) || !selectedFeatures.length || !window.L) return true;
+
+  selectedBoundaryLayer = L.geoJSON(
+    { type: 'FeatureCollection', features: selectedFeatures },
+      {
+        pane: 'selectedHuntPane',
+        interactive: false,
+        style: () => ({
+          color: '#6d3bbd',
+          weight: 2.4,
+          fillColor: '#b89af4',
+          fillOpacity: 0.18,
+          opacity: 1
+        })
+      }
+    );
+
+  selectedBoundaryLayer.addTo(map);
+  if (typeof selectedBoundaryLayer.bringToFront === 'function') {
+    selectedBoundaryLayer.bringToFront();
+  }
   return true;
 }
 
@@ -2595,17 +2637,13 @@ async function refreshLiveBoundaryFilter() {
     const remote = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
-    const local = buildBoundaryMatchSets(selectedHunt);
-    const names = new Set([...remote.names, ...local.names]);
-    const ids = new Set([...remote.ids, ...local.ids]);
-    clearSelectedBoundaryLayer();
-    const filtered = filterBoundaryFeatures(names, ids);
+    const filtered = getFilteredBoundaryFeatures();
     renderLiveHuntUnitsFeatures(filtered);
+    await renderSelectedBoundaryOnly();
   } catch (err) {
     console.error('Boundary filter failed:', err);
-    clearSelectedBoundaryLayer();
-    const local = buildBoundaryMatchSets(selectedHunt);
-    renderLiveHuntUnitsFeatures(filterBoundaryFeatures(local.names, local.ids));
+    renderLiveHuntUnitsFeatures(getFilteredBoundaryFeatures());
+    await renderSelectedBoundaryOnly();
   }
 }
   
@@ -3188,10 +3226,11 @@ map.on('zoomend', () => {
   updateContextualLandOverlayVisibility();
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
     selectedBoundaryLayer.setStyle({
-      color: '#1d3f91',
-      weight: map.getZoom() <= 6 ? 2.2 : map.getZoom() <= 8 ? 3 : 4,
-      fillColor: '#9cb4f2',
-      fillOpacity: 0.18
+      color: '#6d3bbd',
+      weight: 2.4,
+      fillColor: '#b89af4',
+      fillOpacity: 0.18,
+      opacity: 1
     });
   }
 });
@@ -3199,6 +3238,28 @@ map.on('zoomend', () => {
 map.on('moveend', () => {
   refreshBoundaryHoverTooltip();
 });
+
+const mapContainerEl = map.getContainer ? map.getContainer() : null;
+if (mapContainerEl) {
+  mapContainerEl.addEventListener('mousemove', evt => {
+    if (!map || !evt) return;
+    const point = map.mouseEventToContainerPoint(evt);
+    updateBoundaryHoverAtContainerPoint(point);
+  }, true);
+
+  mapContainerEl.addEventListener('mouseleave', () => {
+    hideBoundaryHoverTooltip();
+  }, true);
+
+  mapContainerEl.addEventListener('dblclick', evt => {
+    if (!selectedHunt || !map) return;
+    clearLandOverlayClickTimer();
+    const point = map.mouseEventToContainerPoint(evt);
+    openBoundaryChoicePopupAtContainerPoint(point, evt);
+    evt.preventDefault();
+    evt.stopPropagation();
+  }, true);
+}
 
 (async function init() {
   try {
