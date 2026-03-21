@@ -1,5 +1,37 @@
 [
   {
+    "listingName": "Wild Eyez Outfitters",
+    "listingType": "Outfitter",
+    "certLevel": "CPO",
+    "verificationStatus": "Vetted",
+    "website": "https://www.wildeyez.net",
+    "phone": "4358516480",
+    "email": "tyler@wildeyez.net",
+    "region": "Utah",
+    "city": "Manti",
+    "ownerName": "Tyler Miller",
+    "speciesServed": [
+      "Elk",
+      "Deer"
+    ],
+    "unitsServed": [
+      "Beaver, East",
+      "Fishlake",
+      "Manti/San Rafael",
+      "Monroe",
+      "Fillmore",
+      "Nebo"
+    ],
+    "blmDistricts": [
+      "Richfield"
+    ],
+    "usfsForests": [
+      "Fishlake NF - Richfield",
+      "Manti-La Sal NF - Sanpete"
+    ],
+    "notes": "Known-good trial row"
+  },
+  {
     "listingName": "Albrecht Outfitters",
     "listingType": "Outfitter",
     "certLevel": "",
@@ -182,7 +214,7 @@
     "city": "",
     "ownerName": "Tim Pilling",
     "speciesServed": "Deer",
-    "unitsServed": "Wasatch",
+    "unitsServed": [],
     "blmDistricts": "Grand Staircase Kanab",
     "usfsForests": "UWC",
     "notes": "First-pass normalization only"
