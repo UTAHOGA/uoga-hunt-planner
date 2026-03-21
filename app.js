@@ -2001,6 +2001,26 @@ function showBoundaryHoverTooltip(latlng, label) {
   boundaryHoverTooltip.addTo(map);
 }
 
+function updateBoundaryHoverAtLatLng(latlng) {
+  if (!toggleLiveUnits?.checked || !liveHuntUnitsLayer) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+  const boundaryLayer = findBoundaryLayerAtLatLng(latlng);
+  const label = boundaryLayer?.feature ? getBoundaryHoverLabel(boundaryLayer.feature) : '';
+  if (!label) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+  showBoundaryHoverTooltip(latlng, label);
+}
+
+function openBoundaryChoicePopupAtLatLng(latlng, evt) {
+  const boundaryLayer = findBoundaryLayerAtLatLng(latlng);
+  if (!boundaryLayer?.feature) return;
+  openBoundaryChoicePopup(boundaryLayer, boundaryLayer.feature, evt);
+}
+
 function updateInteractivePanePriority() {
   if (!map || !map.getPane) return;
   const huntPane = map.getPane('huntPane');
@@ -2106,6 +2126,19 @@ function buildUSFSLayer() {
     setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
   });
 
+  usfsDistrictLayer.on('mousemove', evt => {
+    updateBoundaryHoverAtLatLng(evt.latlng);
+  });
+
+  usfsDistrictLayer.on('mouseout', () => {
+    hideBoundaryHoverTooltip();
+  });
+
+  usfsDistrictLayer.on('dblclick', evt => {
+    if (!selectedHunt) return;
+    openBoundaryChoicePopupAtLatLng(evt.latlng, evt);
+  });
+
   updateContextualLandOverlayVisibility();
 }
 
@@ -2136,6 +2169,19 @@ function buildBLMLayer() {
       className: 'blm-sign-popup'
     }).openPopup();
     setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
+  });
+
+  blmDistrictLayer.on('mousemove', evt => {
+    updateBoundaryHoverAtLatLng(evt.latlng);
+  });
+
+  blmDistrictLayer.on('mouseout', () => {
+    hideBoundaryHoverTooltip();
+  });
+
+  blmDistrictLayer.on('dblclick', evt => {
+    if (!selectedHunt) return;
+    openBoundaryChoicePopupAtLatLng(evt.latlng, evt);
   });
 
   updateContextualLandOverlayVisibility();
@@ -3093,23 +3139,11 @@ map.on('click', e => {
 
 map.on('dblclick', e => {
   if (!selectedHunt) return;
-  const boundaryLayer = findBoundaryLayerAtLatLng(e.latlng);
-  if (!boundaryLayer?.feature) return;
-  openBoundaryChoicePopup(boundaryLayer, boundaryLayer.feature, e);
+  openBoundaryChoicePopupAtLatLng(e.latlng, e);
 });
 
 map.on('mousemove', e => {
-  if (!toggleLiveUnits?.checked || !liveHuntUnitsLayer) {
-    hideBoundaryHoverTooltip();
-    return;
-  }
-  const boundaryLayer = findBoundaryLayerAtLatLng(e.latlng);
-  const label = boundaryLayer?.feature ? getBoundaryHoverLabel(boundaryLayer.feature) : '';
-  if (!label) {
-    hideBoundaryHoverTooltip();
-    return;
-  }
-  showBoundaryHoverTooltip(e.latlng, label);
+  updateBoundaryHoverAtLatLng(e.latlng);
 });
 
 map.on('mouseout', () => {
