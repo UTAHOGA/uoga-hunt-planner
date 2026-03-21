@@ -293,15 +293,28 @@ function setSelectedDisplay(title, meta) {
 function updateGoogleMapsEmbed(hunt = null) {
   if (!googleMapsEmbed) return;
 
-  const query = hunt
-    ? [getUnitName(hunt), getSpeciesRaw(hunt), 'Utah'].filter(Boolean).join(' ')
-    : 'Utah';
+  let src = 'https://www.google.com/maps?q=Utah&output=embed';
 
-  googleMapsEmbed.src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  if (hunt) {
+    const lat = getHuntLat(hunt);
+    const lng = getHuntLng(hunt);
+    const trustedCenter = getTrustedUnitCenter(hunt);
+    const centerLat = Number.isFinite(lat) && Number.isFinite(lng) ? lat : trustedCenter?.[0];
+    const centerLng = Number.isFinite(lat) && Number.isFinite(lng) ? lng : trustedCenter?.[1];
+
+    if (Number.isFinite(centerLat) && Number.isFinite(centerLng)) {
+      src = `https://www.google.com/maps?q=${centerLat},${centerLng}&z=9&output=embed`;
+    } else {
+      const query = [getUnitName(hunt), 'hunt unit', 'Utah'].filter(Boolean).join(' ');
+      src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+    }
+  }
+
+  googleMapsEmbed.src = src;
 
   if (googleMapsMeta) {
     googleMapsMeta.textContent = hunt
-      ? `Showing Google Maps for ${getUnitName(hunt) || getHuntTitle(hunt)}. This is a supplemental reference view.`
+      ? `Showing Google Maps centered on ${getUnitName(hunt) || getHuntTitle(hunt)}. This is a supplemental reference view.`
       : 'Showing a general Utah view. Select a hunt to update this map.';
   }
 }
