@@ -225,7 +225,6 @@ const WEAPON_ORDER = [
   'Multiseason',
   'Restricted Multiseason'
 ];
-
 const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1503: ['Manti, San Rafael'],
   DB1533: ['Manti, San Rafael'],
@@ -234,7 +233,27 @@ const HUNT_BOUNDARY_NAME_OVERRIDES = {
   DB1510: ['Monroe'],
   DB1540: ['Monroe'],
   DB1506: ['Fillmore'],
-  DB1536: ['Fillmore']
+  DB1536: ['Fillmore'],
+  EA1220: [
+    'Manti, North',
+    'Manti, South',
+    'Manti, West',
+    'Manti, Central',
+    'Manti, Mohrland-Stump Flat',
+    'Manti, Horn Mtn',
+    'Manti, Gordon Creek-Price Canyon',
+    'Manti, Ferron Canyon'
+  ],
+  EA1221: [
+    'Fishlake/Thousand Lakes',
+    'Fishlake/Thousand Lakes East',
+    'Fishlake/Thousand Lakes West'
+  ],
+  EA1258: [
+    'La Sal Mtns',
+    'Dolores Triangle',
+    'La Sal, La Sal Mtns-North'
+  ]
 };
 
 const searchInput = document.getElementById('searchInput');
