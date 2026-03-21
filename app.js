@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-12';
+const APP_BUILD = 'build-2026-03-21-13';
 const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
 
 const outfitters = [
@@ -305,8 +305,10 @@ function setSelectedDisplay(title, meta) {
 
 function getGoogleMapTypeForCurrentBasemap() {
   const base = safe(basemapSelect?.value).trim().toLowerCase();
+  // Google Maps Embed API does not support a true "terrain" maptype here,
+  // so we map our Terrain view to roadmap as the closest supported option.
   if (base === 'sat') return 'hybrid';
-  if (base === 'usgs') return 'terrain';
+  if (base === 'usgs') return 'roadmap';
   if (base === 'natgeo') return 'roadmap';
   return 'roadmap';
 }
