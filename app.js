@@ -1899,6 +1899,28 @@ function wireBoundaryChoicePopup(popup) {
   });
 }
 
+function openBoundaryChoicePopup(layer, feature, evt) {
+  const matches = findMatchingHuntsForBoundaryFeature(feature);
+  if (!matches.length) return;
+
+  L.DomEvent.stopPropagation(evt);
+  if (evt.originalEvent) {
+    L.DomEvent.preventDefault(evt.originalEvent);
+    L.DomEvent.stopPropagation(evt.originalEvent);
+  }
+
+  suppressNextMapClickInfo = true;
+  layer.bindPopup(buildBoundaryChoicePopup(feature, matches), {
+    className: 'hunt-choice-popup-wrap',
+    maxWidth: 560,
+    minWidth: 420,
+    autoPan: true,
+    keepInView: true
+  });
+  layer.once('popupopen', e => wireBoundaryChoicePopup(e.popup));
+  layer.openPopup(evt.latlng);
+}
+
 function renderLiveHuntUnitsFeatures(features) {
   if (!window.L) return;
 
@@ -1931,27 +1953,19 @@ function renderLiveHuntUnitsFeatures(features) {
         }
 
         layer.on('click', evt => {
-          const matches = findMatchingHuntsForBoundaryFeature(feature);
-          if (!matches.length) return;
-
-          L.DomEvent.stopPropagation(evt);
-          if (evt.originalEvent) {
-            L.DomEvent.preventDefault(evt.originalEvent);
-            L.DomEvent.stopPropagation(evt.originalEvent);
-          }
-
-          suppressNextMapClickInfo = true;
-          layer.bindPopup(buildBoundaryChoicePopup(feature, matches), {
-            className: 'hunt-choice-popup-wrap',
-            maxWidth: 560,
-            minWidth: 420,
-            autoPan: true,
-            keepInView: true
-          });
-          layer.once('popupopen', e => wireBoundaryChoicePopup(e.popup));
-          layer.openPopup(evt.latlng);
+          if (selectedHunt) return;
+          openBoundaryChoicePopup(layer, feature, evt);
         });
         layer.on('dblclick', evt => {
+          if (!selectedHunt) {
+            L.DomEvent.stopPropagation(evt);
+            if (evt.originalEvent) {
+              L.DomEvent.preventDefault(evt.originalEvent);
+              L.DomEvent.stopPropagation(evt.originalEvent);
+            }
+            return;
+          }
+          openBoundaryChoicePopup(layer, feature, evt);
           L.DomEvent.stopPropagation(evt);
           if (evt.originalEvent) {
             L.DomEvent.preventDefault(evt.originalEvent);
@@ -1996,6 +2010,7 @@ function buildUSFSLayer() {
   }, { className: 'usfs-sign-popup' });
 
   usfsDistrictLayer.on('click', evt => {
+    if (!canOpenLandOverlayPopup()) return;
     setOverlayPriority('usfs', evt);
     const p = evt.layer?.feature?.properties || {};
     const forest = getUsfsLabel(p);
@@ -2026,6 +2041,7 @@ function buildBLMLayer() {
   }, { className: 'blm-sign-popup' });
 
   blmDistrictLayer.on('click', evt => {
+    if (!canOpenLandOverlayPopup()) return;
     if (shouldYieldToOverlay('blm')) return;
     setOverlayPriority('blm', evt);
     const p = evt.layer?.feature?.properties || {};
@@ -2056,6 +2072,10 @@ function shouldShowContextualLandOverlay() {
   const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 0;
   if (selectedHunt) return zoom >= 8;
   return zoom >= 9;
+}
+
+function canOpenLandOverlayPopup() {
+  return !!selectedHunt && shouldShowContextualLandOverlay();
 }
 
 function updateContextualLandOverlayVisibility() {
@@ -3069,4 +3089,5 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
 
