@@ -1227,7 +1227,7 @@ map.getPane('blmPane').style.zIndex = 430;
 map.createPane('usfsPane');
 map.getPane('usfsPane').style.zIndex = 440;
 map.createPane('huntPane');
-map.getPane('huntPane').style.zIndex = 350;
+map.getPane('huntPane').style.zIndex = 445;
 map.createPane('selectedHuntPane');
 map.getPane('selectedHuntPane').style.zIndex = 450;
 
@@ -1833,6 +1833,72 @@ function findMatchingHuntsForBoundaryFeature(feature) {
   });
 }
 
+function buildBoundaryChoicePopup(feature, matches) {
+  const boundaryName = escapeHtml(safe(getBoundaryFeatureName(feature)).trim() || 'Selected Hunt Unit');
+  const rows = matches
+    .slice()
+    .sort((a, b) => {
+      const aCode = safe(getHuntCode(a));
+      const bCode = safe(getHuntCode(b));
+      return aCode.localeCompare(bCode);
+    })
+    .map(hunt => {
+      const code = safe(getHuntCode(hunt));
+      const title = escapeHtml(getHuntTitle(hunt) || code || boundaryName);
+      const weapon = escapeHtml(getWeapon(hunt) || 'N/A');
+      const season = escapeHtml(getEffectiveSeasonText(hunt) || 'N/A');
+      const codeEscaped = escapeHtml(code);
+      return `
+        <tr>
+          <td class="hunt-choice-code">${codeEscaped}</td>
+          <td class="hunt-choice-title">${title}</td>
+          <td class="hunt-choice-weapon">${weapon}</td>
+          <td class="hunt-choice-season">${season}</td>
+          <td class="hunt-choice-action">
+            <button type="button" class="hunt-choice-select" data-hunt-code="${codeEscaped}">Select</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  return `
+    <div class="hunt-choice-popup">
+      <div class="hunt-choice-kicker">${boundaryName}</div>
+      <div class="hunt-choice-heading">Matching Hunts</div>
+      <div class="hunt-choice-table-wrap">
+        <table class="hunt-choice-table">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Hunt</th>
+              <th>Weapon</th>
+              <th>Dates</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function wireBoundaryChoicePopup(popup) {
+  const popupEl = popup?.getElement?.();
+  if (!popupEl) return;
+  popupEl.querySelectorAll('.hunt-choice-select').forEach(btn => {
+    btn.addEventListener('click', evt => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const code = safe(btn.getAttribute('data-hunt-code')).trim();
+      if (!code) return;
+      selectHuntByCode(code);
+      try { map.closePopup(); } catch (e) {}
+    });
+  });
+}
+
 function renderLiveHuntUnitsFeatures(features) {
   if (!window.L) return;
 
@@ -1865,7 +1931,6 @@ function renderLiveHuntUnitsFeatures(features) {
         }
 
         layer.on('click', evt => {
-          if (!canSelectBoundaryByDoubleClick()) return;
           const matches = findMatchingHuntsForBoundaryFeature(feature);
           if (!matches.length) return;
 
@@ -1876,14 +1941,17 @@ function renderLiveHuntUnitsFeatures(features) {
           }
 
           suppressNextMapClickInfo = true;
-          const matchedHunt = matches[0];
-          selectHuntByCode(getHuntCode(matchedHunt));
+          layer.bindPopup(buildBoundaryChoicePopup(feature, matches), {
+            className: 'hunt-choice-popup-wrap',
+            maxWidth: 560,
+            minWidth: 420,
+            autoPan: true,
+            keepInView: true
+          });
+          layer.once('popupopen', e => wireBoundaryChoicePopup(e.popup));
+          layer.openPopup(evt.latlng);
         });
         layer.on('dblclick', evt => {
-          if (!canSelectBoundaryByDoubleClick()) return;
-          const matches = findMatchingHuntsForBoundaryFeature(feature);
-          if (!matches.length) return;
-
           L.DomEvent.stopPropagation(evt);
           if (evt.originalEvent) {
             L.DomEvent.preventDefault(evt.originalEvent);
