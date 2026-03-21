@@ -8,6 +8,32 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Widgets/widgets.css" />
 
+  <script>
+    (function () {
+      function forceTop() {
+        window.scrollTo(0, 0);
+        if (document.documentElement) document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+      }
+
+      try {
+        if ('scrollRestoration' in history) {
+          history.scrollRestoration = 'manual';
+        }
+      } catch (e) {}
+
+      window.addEventListener('DOMContentLoaded', forceTop, { once: true });
+      window.addEventListener('load', function () {
+        forceTop();
+        setTimeout(forceTop, 0);
+        setTimeout(forceTop, 120);
+        setTimeout(forceTop, 400);
+      }, { once: true });
+      window.addEventListener('pageshow', forceTop);
+      window.addEventListener('beforeunload', forceTop);
+    })();
+  </script>
+
   <style>
     :root {
       --bg: #f6f1e7;
@@ -593,7 +619,7 @@
     }
 
     #map-wrap.terrain-boost .leaflet-tile-pane {
-      filter: sepia(0.46) saturate(1.10) hue-rotate(-10deg) contrast(1.10) brightness(0.95);
+      filter: saturate(1.20) contrast(1.20) brightness(1.0);
     }
 
     #map-wrap.terrain-boost::after {
@@ -2035,7 +2061,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
-    <script src="app.js?v=20260321-46"></script>
+    <script src="app.js?v=20260321-48"></script>
 </body>
 </html>
 
