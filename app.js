@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-73';
+const APP_BUILD = 'build-2026-03-22-76';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -209,8 +209,8 @@ const OUTFITTER_CITY_LOOKUP = {
   vernal: [40.4555, -109.5287]
 };
 
-const USFS_BADGE_URL = 'https://static.wixstatic.com/media/43f827_277ee2957d114252b7f8ea87c180b87d~mv2.png';
-const BLM_BADGE_URL = 'https://static.wixstatic.com/media/43f827_c5625163d0df428f8f873d6dc7a4bb81~mv2.png';
+const USFS_BADGE_URL = 'https://static.wixstatic.com/media/43f827_8a0c98ae96b644eca819113c1cfa0fc2~mv2.png';
+const BLM_BADGE_URL = 'https://static.wixstatic.com/media/43f827_5f1586f9c5b54340a1f8e50ec128188d~mv2.png';
 
 const HUNT_TYPE_ORDER = [
   'General',
@@ -1150,8 +1150,8 @@ function createFederalBadgeIcon(iconUrl, label) {
   const safeIconUrl = escapeHtml(iconUrl || '');
   return L.divIcon({
     className: 'federal-badge-marker',
-    iconSize: [84, 42],
-    iconAnchor: [42, 21],
+    iconSize: [92, 52],
+    iconAnchor: [46, 26],
     html: `
       <div class="federal-badge-shell">
         <img src="${safeIconUrl}" alt="${safeLabel}" class="federal-badge-logo">
@@ -1406,7 +1406,7 @@ function getHuntBoundaryStyle() {
 
 function updateMapAppearance() {
   if (!mapWrapEl || !basemapSelect) return;
-  const isTerrainLike = ['usgs', 'outdoor', 'topo', 'fs'].includes(basemapSelect.value);
+  const isTerrainLike = ['usgs', 'outdoor', 'topo'].includes(basemapSelect.value);
   mapWrapEl.classList.toggle('terrain-boost', isTerrainLike);
   if (dwrShell) dwrShell.classList.remove('terrain-sync');
   if (cesiumShell) cesiumShell.classList.toggle('terrain-sync', isTerrainLike);
@@ -1452,15 +1452,6 @@ const basemaps = {
     'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
   ),
-  fs: (window.L && window.L.esri && typeof window.L.esri.dynamicMapLayer === 'function')
-    ? L.esri.dynamicMapLayer({
-        url: 'https://apps.fs.usda.gov/fsgisx05/rest/services/wo_nfs_gtac/EGIS_RecreationBasemap_01/MapServer',
-        opacity: 1
-      })
-    : L.tileLayer(
-        'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
-      ),
   positron: L.layerGroup([
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
