@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-58';
+const APP_BUILD = 'build-2026-03-21-59';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -2027,6 +2027,16 @@ function renderLiveHuntUnitsFeatures(features) {
       pane: 'huntPane',
       style: feature => getBoundaryFeatureStyle(feature),
       onEachFeature: (feature, layer) => {
+        const boundaryLabel = safe(getBoundaryFeatureName(feature)).trim();
+        if (boundaryLabel) {
+          layer.bindTooltip(boundaryLabel, {
+            sticky: true,
+            direction: 'top',
+            offset: [0, -6],
+            opacity: 0.96,
+            className: 'hunt-hover-tooltip'
+          });
+        }
         layer.on('click', evt => {
           openBoundaryChoicePopup(layer, feature, evt);
         });
@@ -3075,6 +3085,7 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
 
 
 

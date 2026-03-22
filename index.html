@@ -199,6 +199,23 @@
       font-weight: 700;
     }
 
+    .hunt-hover-tooltip {
+      border: 1px solid #b9906f;
+      border-radius: 6px;
+      background: rgba(255, 252, 246, 0.97);
+      color: var(--text);
+      box-shadow: 0 6px 16px rgba(78, 57, 33, .16);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      padding: 4px 8px;
+    }
+
+    .hunt-hover-tooltip:before {
+      border-top-color: rgba(255, 252, 246, 0.97);
+    }
+
     .field {
       display: grid;
       gap: 3px;
@@ -2151,9 +2168,10 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
-    <script src="app.js?v=20260321-58"></script>
+    <script src="app.js?v=20260321-59"></script>
 </body>
 </html>
+
 
 
 
