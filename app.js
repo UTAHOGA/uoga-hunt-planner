@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-65';
+const APP_BUILD = 'build-2026-03-21-68';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -1000,6 +1000,68 @@ function getBlmLabel(properties) {
     .trim();
 }
 
+function getRingArea(ring = []) {
+  let area = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = Number(ring[i]?.[1]);
+    const yi = Number(ring[i]?.[0]);
+    const xj = Number(ring[j]?.[1]);
+    const yj = Number(ring[j]?.[0]);
+    if (![xi, yi, xj, yj].every(Number.isFinite)) continue;
+    area += (xj * yi) - (xi * yj);
+  }
+  return Math.abs(area / 2);
+}
+
+function getRingCentroid(ring = []) {
+  if (!Array.isArray(ring) || ring.length < 3) return null;
+
+  let areaAccumulator = 0;
+  let lngAccumulator = 0;
+  let latAccumulator = 0;
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const lng1 = Number(ring[j]?.[1]);
+    const lat1 = Number(ring[j]?.[0]);
+    const lng2 = Number(ring[i]?.[1]);
+    const lat2 = Number(ring[i]?.[0]);
+    if (![lng1, lat1, lng2, lat2].every(Number.isFinite)) continue;
+    const cross = (lng1 * lat2) - (lng2 * lat1);
+    areaAccumulator += cross;
+    lngAccumulator += (lng1 + lng2) * cross;
+    latAccumulator += (lat1 + lat2) * cross;
+  }
+
+  if (Math.abs(areaAccumulator) < 1e-9) return null;
+
+  return [
+    latAccumulator / (3 * areaAccumulator),
+    lngAccumulator / (3 * areaAccumulator)
+  ];
+}
+
+function getRepresentativePolygonRing(geometry) {
+  if (!geometry) return null;
+  const { type, coordinates } = geometry;
+  if (type === 'Polygon' && Array.isArray(coordinates?.[0])) {
+    return coordinates[0];
+  }
+  if (type === 'MultiPolygon' && Array.isArray(coordinates)) {
+    let bestRing = null;
+    let bestArea = -Infinity;
+    coordinates.forEach(poly => {
+      const ring = poly?.[0];
+      const area = getRingArea(ring);
+      if (area > bestArea) {
+        bestArea = area;
+        bestRing = ring;
+      }
+    });
+    return bestRing;
+  }
+  return null;
+}
+
 function getFeatureBoundsCenter(feature) {
   const geometry = feature?.geometry;
   if (!geometry) return null;
@@ -1022,7 +1084,22 @@ function getFeatureBoundsCenter(feature) {
     return null;
   }
 
-  return [(bounds.minLat + bounds.maxLat) / 2, (bounds.minLng + bounds.maxLng) / 2];
+  const boundsCenter = [(bounds.minLat + bounds.maxLat) / 2, (bounds.minLng + bounds.maxLng) / 2];
+  if (pointInGeometry({ lat: boundsCenter[0], lng: boundsCenter[1] }, geometry)) {
+    return boundsCenter;
+  }
+
+  const ring = getRepresentativePolygonRing(geometry);
+  const centroid = getRingCentroid(ring);
+  if (centroid && pointInGeometry({ lat: centroid[0], lng: centroid[1] }, geometry)) {
+    return centroid;
+  }
+
+  if (Array.isArray(ring) && Array.isArray(ring[0]) && ring[0].length >= 2) {
+    return [Number(ring[0][0]), Number(ring[0][1])];
+  }
+
+  return boundsCenter;
 }
 
 function getFeatureMarkerKey(feature, fallbackLabel = '') {
@@ -1037,13 +1114,19 @@ function getFeatureMarkerKey(feature, fallbackLabel = '') {
   ).toString();
 }
 
-function createFederalBadgeIcon(iconUrl) {
-  return L.icon({
-    iconUrl,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -11],
-    className: 'federal-badge-icon'
+function createFederalBadgeIcon(iconUrl, label) {
+  const safeLabel = escapeHtml(label || '');
+  const safeIconUrl = escapeHtml(iconUrl || '');
+  return L.divIcon({
+    className: 'federal-badge-marker',
+    iconSize: [84, 42],
+    iconAnchor: [42, 21],
+    html: `
+      <div class="federal-badge-shell">
+        <img src="${safeIconUrl}" alt="${safeLabel}" class="federal-badge-logo">
+        <div class="federal-badge-name">${safeLabel}</div>
+      </div>
+    `
   });
 }
 
@@ -1061,18 +1144,11 @@ function addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl) {
   const center = getFeatureBoundsCenter(feature);
   if (!center) return;
   const marker = L.marker(center, {
-    icon: createFederalBadgeIcon(iconUrl),
+    icon: createFederalBadgeIcon(iconUrl, label),
     pane: 'federalBadgePane',
     interactive: false,
     keyboard: false,
     zIndexOffset: -50
-  });
-  marker.bindTooltip(escapeHtml(label), {
-    permanent: false,
-    direction: 'top',
-    offset: [0, -8],
-    opacity: 0.92,
-    className: 'hunt-hover-tooltip'
   });
   badgeMap.set(key, marker);
   badgeLayer.addLayer(marker);
@@ -2254,8 +2330,7 @@ function applyLiveBoundaryWhere(whereClause) {
 function shouldShowContextualLandOverlay() {
   if (!map) return false;
   const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 0;
-  if (selectedHunt) return zoom >= 8;
-  return zoom >= 9;
+  return !!selectedHunt && zoom >= 8;
 }
 
 function canOpenLandOverlayPopup() {

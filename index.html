@@ -216,6 +216,43 @@
       border-top-color: rgba(255, 252, 246, 0.97);
     }
 
+    .federal-badge-marker {
+      background: transparent;
+      border: 0;
+    }
+
+    .federal-badge-shell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transform: translateY(-2px);
+    }
+
+    .federal-badge-logo {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(30, 22, 12, 0.28));
+      pointer-events: none;
+    }
+
+    .federal-badge-name {
+      max-width: 84px;
+      padding: 1px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(126, 90, 47, 0.22);
+      background: rgba(255, 252, 246, 0.94);
+      box-shadow: 0 3px 8px rgba(41, 27, 12, 0.10);
+      color: #4d3117;
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1.15;
+      text-align: center;
+      white-space: normal;
+      pointer-events: none;
+    }
+
     .field {
       display: grid;
       gap: 3px;
@@ -2168,7 +2205,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
-    <script src="app.js?v=20260321-65"></script>
+    <script src="app.js?v=20260321-68"></script>
 </body>
 </html>
 
