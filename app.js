@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-59';
+const APP_BUILD = 'build-2026-03-21-61';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -431,39 +431,13 @@ function getOutfitterLogoUrl(outfitter) {
 function createOutfitterMarkerIcon(outfitter) {
   const logoUrl = getOutfitterLogoUrl(outfitter);
   if (!logoUrl) return null;
-
-  const label = escapeHtml(safe(outfitter?.listingName).trim() || 'Outfitter');
-  return L.divIcon({
-    className: 'outfitter-logo-pin',
-    html: `
-      <div style="
-        width:40px;
-        height:40px;
-        border-radius:12px;
-        overflow:hidden;
-        border:2px solid #fff7ec;
-        box-shadow:0 4px 12px rgba(36,23,15,.28);
-        background:#fffdf8;
-      ">
-        <img
-          src="${escapeHtml(logoUrl)}"
-          alt="${label}"
-          style="display:block;width:100%;height:100%;object-fit:cover;"
-        />
-      </div>
-      <div style="
-        width:0;
-        height:0;
-        margin: -1px auto 0;
-        border-left:8px solid transparent;
-        border-right:8px solid transparent;
-        border-top:12px solid #fff7ec;
-        filter:drop-shadow(0 2px 3px rgba(36,23,15,.2));
-      "></div>
-    `,
-    iconSize: [40, 52],
-    iconAnchor: [20, 52],
-    popupAnchor: [0, -42]
+  return L.icon({
+    iconUrl: logoUrl,
+    iconRetinaUrl: logoUrl,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -34],
+    className: 'outfitter-logo-pin'
   });
 }
 
@@ -2506,12 +2480,12 @@ async function refreshLiveBoundaryFilter() {
     const remote = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
-    const selectedFeatures = getSelectedBoundaryFeaturesForHunt(selectedHunt);
-    renderLiveHuntUnitsFeatures(selectedFeatures);
+    const filtered = getFilteredBoundaryFeatures();
+    renderLiveHuntUnitsFeatures(filtered);
     await renderSelectedBoundaryOnly();
   } catch (err) {
     console.error('Boundary filter failed:', err);
-    renderLiveHuntUnitsFeatures(getSelectedBoundaryFeaturesForHunt(selectedHunt));
+    renderLiveHuntUnitsFeatures(getFilteredBoundaryFeatures());
     await renderSelectedBoundaryOnly();
   }
 }
@@ -3085,6 +3059,7 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
 
 
 
