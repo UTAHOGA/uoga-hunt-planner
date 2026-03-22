@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-57';
+const APP_BUILD = 'build-2026-03-21-58';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -421,6 +421,50 @@ function getOutfitterCityCenter(outfitter) {
     OUTFITTER_CITY_LOOKUP[rawCity.replace(/\s+/g, '')] ||
     null
   );
+}
+
+function getOutfitterLogoUrl(outfitter) {
+  const url = normalizeUrl(outfitter?.logoUrl || outfitter?.logo || outfitter?.imageUrl);
+  return url || '';
+}
+
+function createOutfitterMarkerIcon(outfitter) {
+  const logoUrl = getOutfitterLogoUrl(outfitter);
+  if (!logoUrl) return null;
+
+  const label = escapeHtml(safe(outfitter?.listingName).trim() || 'Outfitter');
+  return L.divIcon({
+    className: 'outfitter-logo-pin',
+    html: `
+      <div style="
+        width:40px;
+        height:40px;
+        border-radius:12px;
+        overflow:hidden;
+        border:2px solid #fff7ec;
+        box-shadow:0 4px 12px rgba(36,23,15,.28);
+        background:#fffdf8;
+      ">
+        <img
+          src="${escapeHtml(logoUrl)}"
+          alt="${label}"
+          style="display:block;width:100%;height:100%;object-fit:cover;"
+        />
+      </div>
+      <div style="
+        width:0;
+        height:0;
+        margin: -1px auto 0;
+        border-left:8px solid transparent;
+        border-right:8px solid transparent;
+        border-top:12px solid #fff7ec;
+        filter:drop-shadow(0 2px 3px rgba(36,23,15,.2));
+      "></div>
+    `,
+    iconSize: [40, 52],
+    iconAnchor: [20, 52],
+    popupAnchor: [0, -42]
+  });
 }
 
 function setSelectedDisplay(title, meta, reference = '') {
@@ -2608,8 +2652,8 @@ function renderOutfitters() {
     const useLng = cityCenter?.[1] ?? centerLng;
     const markerLat = useLat + cityIndex * 0.012;
     const markerLng = useLng + cityIndex * 0.012;
-
-    const marker = L.marker([markerLat, markerLng]).addTo(outfitterLayer);
+    const customIcon = createOutfitterMarkerIcon(o);
+    const marker = L.marker([markerLat, markerLng], customIcon ? { icon: customIcon } : undefined).addTo(outfitterLayer);
     marker.bindPopup(`
       <b>${escapeHtml(o.listingName)}</b><br>
       ${escapeHtml(o.certLevel)} | ${escapeHtml(o.verificationStatus)}<br>
@@ -3031,6 +3075,7 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
 
 
 
