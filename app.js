@@ -5,7 +5,8 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-22-114';
+const APP_BUILD = 'build-2026-03-22-118';
+const FEDERAL_BADGE_MIN_ZOOM = 8;
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -463,13 +464,20 @@ function getOutfitterLogoUrl(outfitter) {
 function createOutfitterMarkerIcon(outfitter) {
   const logoUrl = getOutfitterLogoUrl(outfitter);
   if (!logoUrl) return null;
-  return L.icon({
-    iconUrl: logoUrl,
-    iconRetinaUrl: logoUrl,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -34],
-    className: 'outfitter-logo-pin'
+  const safeLogoUrl = escapeHtml(logoUrl);
+  return L.divIcon({
+    className: 'outfitter-logo-pin',
+    iconSize: [44, 58],
+    iconAnchor: [22, 52],
+    popupAnchor: [0, -46],
+    html: `
+      <div class="outfitter-logo-pin-shell">
+        <div class="outfitter-logo-pin-base"></div>
+        <div class="outfitter-logo-pin-center">
+          <img src="${safeLogoUrl}" alt="${escapeHtml(outfitter?.listingName || 'Outfitter')}">
+        </div>
+      </div>
+    `
   });
 }
 
@@ -1275,7 +1283,7 @@ function getPreferredFederalBadgeCenter(label, feature, labelUsage) {
 
 function createFederalBadgeIcon(iconUrl, label) {
   const zoom = map?.getZoom?.() ?? 6;
-  const showLabel = zoom >= 8;
+  const showLabel = zoom >= 9;
   const iconSize = showLabel ? [132, 86] : [44, 44];
   const iconAnchor = showLabel ? [66, 43] : [22, 22];
   const safeLabel = escapeHtml(label || '');
@@ -1905,6 +1913,13 @@ function getFilteredHunts() {
   return getMatrixFilteredHunts();
 }
 
+function isSelectedHuntInCurrentMatrix(hunt = selectedHunt) {
+  if (!hunt) return false;
+  const selectedCode = safe(getHuntCode(hunt)).trim().toLowerCase();
+  if (!selectedCode) return false;
+  return getFilteredHunts().some(item => safe(getHuntCode(item)).trim().toLowerCase() === selectedCode);
+}
+
 function getMatrixFilteredHunts(excludeKey = '') {
   const search = safe(searchInput?.value).trim().toLowerCase();
   const species = safe(speciesFilter?.value || 'All Species');
@@ -2082,7 +2097,7 @@ function populateUnits() {
 }
 
 function getSelectedOutfitters() {
-  if (!selectedHunt) return [];
+  if (!selectedHunt || !isSelectedHuntInCurrentMatrix(selectedHunt)) return [];
 
   const codeSlug = slugify(getUnitCode(selectedHunt));
   const nameSlug = slugify(getUnitName(selectedHunt));
@@ -2580,13 +2595,18 @@ function shouldShowContextualLandOverlay() {
 
 function updateContextualLandOverlayVisibility() {
   const show = shouldShowContextualLandOverlay();
+  const showFederalBadges = !!map && (map.getZoom?.() ?? 0) >= FEDERAL_BADGE_MIN_ZOOM;
 
   if (usfsDistrictLayer) {
     if (toggleUSFS?.checked && show) {
       if (!map.hasLayer(usfsDistrictLayer)) usfsDistrictLayer.addTo(map);
-      rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL);
-      setTimeout(() => rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL), 250);
-      if (!map.hasLayer(usfsBadgeLayer)) usfsBadgeLayer.addTo(map);
+      if (showFederalBadges) {
+        rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL);
+        setTimeout(() => rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL), 250);
+        if (!map.hasLayer(usfsBadgeLayer)) usfsBadgeLayer.addTo(map);
+      } else if (usfsBadgeLayer && map.hasLayer(usfsBadgeLayer)) {
+        map.removeLayer(usfsBadgeLayer);
+      }
     } else if (map.hasLayer(usfsDistrictLayer)) {
       map.removeLayer(usfsDistrictLayer);
       if (usfsBadgeLayer && map.hasLayer(usfsBadgeLayer)) map.removeLayer(usfsBadgeLayer);
@@ -2596,9 +2616,13 @@ function updateContextualLandOverlayVisibility() {
   if (blmDistrictLayer) {
     if (toggleBLM?.checked && show) {
       if (!map.hasLayer(blmDistrictLayer)) blmDistrictLayer.addTo(map);
-      rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL);
-      setTimeout(() => rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL), 250);
-      if (!map.hasLayer(blmBadgeLayer)) blmBadgeLayer.addTo(map);
+      if (showFederalBadges) {
+        rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL);
+        setTimeout(() => rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL), 250);
+        if (!map.hasLayer(blmBadgeLayer)) blmBadgeLayer.addTo(map);
+      } else if (blmBadgeLayer && map.hasLayer(blmBadgeLayer)) {
+        map.removeLayer(blmBadgeLayer);
+      }
     } else if (map.hasLayer(blmDistrictLayer)) {
       map.removeLayer(blmDistrictLayer);
       if (blmBadgeLayer && map.hasLayer(blmBadgeLayer)) map.removeLayer(blmBadgeLayer);
@@ -3076,7 +3100,7 @@ function renderAreaInfo(remoteInfo = null) {
 function renderOutfitters() {
   outfitterLayer.clearLayers();
   if (toggleOutfitters && !toggleOutfitters.checked) return;
-  if (!selectedHunt) return;
+  if (!selectedHunt || !isSelectedHuntInCurrentMatrix(selectedHunt)) return;
 
   const matches = getSelectedOutfitters();
   const baseLat = getHuntLat(selectedHunt);
@@ -3112,7 +3136,7 @@ function renderOutfitters() {
 function renderOutfitterResults() {
   if (!resultsEl && !resultsMobileEl) return;
 
-  if (!selectedHunt) {
+  if (!selectedHunt || !isSelectedHuntInCurrentMatrix(selectedHunt)) {
     setHtml([resultsEl, resultsMobileEl], '<div class="empty">Select a hunt or unit to load outfitter results.</div>');
     return;
   }
