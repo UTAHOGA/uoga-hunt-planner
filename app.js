@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-52';
+const APP_BUILD = 'build-2026-03-21-54';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -2407,12 +2407,12 @@ async function refreshLiveBoundaryFilter() {
     const remote = await queryBoundaryNamesAndIds(selectedHunt);
     if (token !== liveFilterToken) return;
 
-    const filtered = getFilteredBoundaryFeatures();
-    renderLiveHuntUnitsFeatures(filtered);
+    const selectedFeatures = getSelectedBoundaryFeaturesForHunt(selectedHunt);
+    renderLiveHuntUnitsFeatures(selectedFeatures);
     await renderSelectedBoundaryOnly();
   } catch (err) {
     console.error('Boundary filter failed:', err);
-    renderLiveHuntUnitsFeatures(getFilteredBoundaryFeatures());
+    renderLiveHuntUnitsFeatures(getSelectedBoundaryFeaturesForHunt(selectedHunt));
     await renderSelectedBoundaryOnly();
   }
 }
@@ -2642,6 +2642,7 @@ function selectUnitByValue(unitValue) {
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
+  zoomToSelectedBoundary();
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
 }
@@ -2669,6 +2670,7 @@ function selectHuntByCode(huntCode) {
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
+  zoomToSelectedBoundary();
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
 }
