@@ -5,8 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-50';
-const GOOGLE_EMBED_API_KEY = 'AIzaSyC67YPMyEAHpkwcYsro-VWb7fXLztLsa4M';
+const APP_BUILD = 'build-2026-03-21-52';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -266,7 +265,6 @@ const unitFilter = document.getElementById('unitFilter');
 const basemapSelect = document.getElementById('basemapSelect');
 
 const toggleLiveUnits = document.getElementById('toggleLiveUnits');
-const toggleUnits = document.getElementById('toggleUnits');
 const toggleUSFS = document.getElementById('toggleUSFS');
 const toggleBLM = document.getElementById('toggleBLM');
 const toggleSITLA = document.getElementById('toggleSITLA');
@@ -274,8 +272,6 @@ const toggleState = document.getElementById('toggleState');
 const togglePrivate = document.getElementById('togglePrivate');
 
 const toggleOutfitters = document.getElementById('toggleOutfitters');
-const toggleCPO = document.getElementById('toggleCPO');
-const toggleCPG = document.getElementById('toggleCPG');
 
 const openBoundaryBtn = document.getElementById('openBoundaryBtn');
 const openAboutBtn = document.getElementById('openAboutBtn');
@@ -289,8 +285,6 @@ const selectedMetaMobile = document.getElementById('selectedMetaMobile');
 const selectedRefMobile = document.getElementById('selectedRefMobile');
 const selectedSummaryDesktop = document.getElementById('selectedSummaryDesktop');
 const selectedSummaryMobile = document.getElementById('selectedSummaryMobile');
-const googleMapsEmbed = document.getElementById('googleMapsEmbed');
-const googleMapsMeta = document.getElementById('googleMapsMeta');
 const dwrBoundaryEmbed = document.getElementById('dwrBoundaryEmbed');
 const dwrBoundaryMeta = document.getElementById('dwrBoundaryMeta');
 const dwrBoundarySnapshot = document.getElementById('dwrBoundarySnapshot');
@@ -301,7 +295,6 @@ const cesiumZoomBtn = document.getElementById('cesiumZoomBtn');
 const cesiumTiltBtn = document.getElementById('cesiumTiltBtn');
 const cesiumResetBtn = document.getElementById('cesiumResetBtn');
 const cesiumTerrainBtn = document.getElementById('cesiumTerrainBtn');
-const googleShell = googleMapsEmbed?.closest('.google-shell') || null;
 const dwrShell = dwrBoundaryEmbed?.closest('.google-shell') || null;
 const cesiumShell = cesiumContainer?.closest('.google-shell') || null;
 const toggleCesiumPanelBtn = document.getElementById('toggleCesiumPanelBtn');
@@ -316,7 +309,6 @@ let cesiumTerrainEnabled = false;
 let cesiumTilted = false;
 let cesiumViewRequestId = 0;
 const remoteHuntInfoCache = new Map();
-const toggleGooglePanelBtn = document.getElementById('toggleGooglePanelBtn');
 const toggleDwrPanelBtn = document.getElementById('toggleDwrPanelBtn');
 const huntResultsEl = document.getElementById('huntResults');
 const huntResultsMobileEl = document.getElementById('huntResultsMobile');
@@ -325,11 +317,8 @@ const resultsMobileEl = document.getElementById('resultsMobile');
 const areaInfoEl = document.getElementById('areaInfo');
 const areaInfoMobileEl = document.getElementById('areaInfoMobile');
 const areaInfoMapEl = document.getElementById('areaInfoMap');
-const clickInfoEl = document.getElementById('clickInfo');
-const clickInfoMobileEl = document.getElementById('clickInfoMobile');
 const huntCountEl = document.getElementById('huntCount');
 const huntCountMobileEl = document.getElementById('huntCountMobile');
-const unitResultsEl = document.getElementById('unitResults');
 const resultsTrayEl = document.querySelector('.results');
 const toggleResultsTrayBtn = document.getElementById('toggleResultsTray');
 const mapWrapEl = document.getElementById('map-wrap');
@@ -403,52 +392,6 @@ function setSelectedDisplay(title, meta, reference = '') {
   if (selectedRefMobile) selectedRefMobile.textContent = hasSelection ? resolvedReference : 'Reference';
   if (selectedSummaryDesktop) selectedSummaryDesktop.classList.toggle('is-active', hasSelection);
   if (selectedSummaryMobile) selectedSummaryMobile.classList.toggle('is-active', hasSelection);
-}
-
-function getGoogleMapTypeForCurrentBasemap() {
-  const base = safe(basemapSelect?.value).trim().toLowerCase();
-  // Google Maps Embed API does not support a true "terrain" maptype here,
-  // so we map our Terrain view to roadmap as the closest supported option.
-  if (base === 'sat') return 'hybrid';
-  if (base === 'usgs') return 'roadmap';
-  if (base === 'outdoor') return 'roadmap';
-  if (base === 'topo') return 'roadmap';
-  if (base === 'natgeo') return 'roadmap';
-  return 'roadmap';
-}
-
-function updateGoogleMapsEmbed(hunt = null) {
-  if (!googleMapsEmbed) return;
-
-  const googleMapType = getGoogleMapTypeForCurrentBasemap();
-
-  let src = `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(GOOGLE_EMBED_API_KEY)}&q=${encodeURIComponent('Utah')}&maptype=${encodeURIComponent(googleMapType)}`;
-
-  if (hunt) {
-    const trustedCenter = getTrustedUnitCenter(hunt);
-    const lat = getHuntLat(hunt);
-    const lng = getHuntLng(hunt);
-    const hasValidTrustedCenter = Array.isArray(trustedCenter) && isLikelyUtahCoordinate(trustedCenter[0], trustedCenter[1]);
-    const hasValidHuntCenter = isLikelyUtahCoordinate(lat, lng);
-    const centerLat = hasValidTrustedCenter ? trustedCenter[0] : hasValidHuntCenter ? lat : null;
-    const centerLng = hasValidTrustedCenter ? trustedCenter[1] : hasValidHuntCenter ? lng : null;
-
-    if (Number.isFinite(centerLat) && Number.isFinite(centerLng)) {
-      const center = `${centerLat},${centerLng}`;
-      src = `https://www.google.com/maps/embed/v1/view?key=${encodeURIComponent(GOOGLE_EMBED_API_KEY)}&center=${encodeURIComponent(center)}&zoom=9&maptype=${encodeURIComponent(googleMapType)}`;
-    } else {
-      const query = [getUnitName(hunt), 'hunt unit', 'Utah'].filter(Boolean).join(' ');
-      src = `https://www.google.com/maps/embed/v1/search?key=${encodeURIComponent(GOOGLE_EMBED_API_KEY)}&q=${encodeURIComponent(query)}&maptype=${encodeURIComponent(googleMapType)}`;
-    }
-  }
-
-  googleMapsEmbed.src = src;
-
-  if (googleMapsMeta) {
-    googleMapsMeta.textContent = hunt
-      ? `Showing Google Maps centered on ${getUnitName(hunt) || getHuntTitle(hunt)} with a ${googleMapType} view matched to the main basemap as closely as Google allows.`
-      : `Showing a general Utah ${googleMapType} view. Select a hunt to update this map.`;
-  }
 }
 
 function getDwrPlannerUrl(hunt = null) {
@@ -953,10 +896,6 @@ function attachHuntResultsInteraction(container) {
   });
 }
 
-function setClickInfoHtml(html) {
-  setHtml([clickInfoEl, clickInfoMobileEl], html);
-}
-
 function getUsfsLabel(properties) {
   const p = properties || {};
   return firstNonEmpty(
@@ -1207,7 +1146,6 @@ function updateMapAppearance() {
   if (!mapWrapEl || !basemapSelect) return;
   const isTerrainLike = ['usgs', 'outdoor', 'topo'].includes(basemapSelect.value);
   mapWrapEl.classList.toggle('terrain-boost', isTerrainLike);
-  if (googleShell) googleShell.classList.toggle('terrain-sync', isTerrainLike);
   if (dwrShell) dwrShell.classList.remove('terrain-sync');
   if (cesiumShell) cesiumShell.classList.toggle('terrain-sync', isTerrainLike);
 }
@@ -1695,12 +1633,6 @@ function getSelectedOutfitters() {
       const servedSpecies = slugList(o.speciesServed || o.species);
       if (!servedSpecies.length || !huntSpecies.length) return true;
       return servedSpecies.some(species => huntSpecies.includes(species));
-    })
-    .filter(o => {
-      const cert = safe(o.certLevel).toUpperCase();
-      if (cert === 'CPO' && toggleCPO && !toggleCPO.checked) return false;
-      if (cert === 'CPG' && toggleCPG && !toggleCPG.checked) return false;
-      return true;
     });
 }
 
@@ -2062,7 +1994,6 @@ function buildUSFSLayer() {
       .setLatLng(evt.latlng)
       .setContent(buildUsfsSignPopup(forest))
       .openOn(map);
-    setClickInfoHtml(`<strong>USFS:</strong> ${escapeHtml(forest)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['FORESTNAME', 'FORESTNUMBER', 'REGION']))}</span>`);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2095,7 +2026,6 @@ function buildBLMLayer() {
       .setLatLng(evt.latlng)
       .setContent(buildBlmSignPopup(unit, 'Utah District'))
       .openOn(map);
-    setClickInfoHtml(`<strong>BLM:</strong> ${escapeHtml(unit)}<br><span style="color:var(--muted);font-size:11px;">${escapeHtml(getFieldPreview(p, ['ADMU_NAME', 'ADMU_DISPLAY_NAME', 'DISTRICT_NAME', 'OFFICE_NAME', 'PARENT_NAME', 'ADM_UNIT_CD']))}</span>`);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2514,51 +2444,6 @@ function renderUnitCenters() {
   return;
 }
 
-function renderUnitResults() {
-  if (!unitResultsEl) return;
-
-  const units = new Map();
-  getFilteredHunts().forEach(h => {
-    const value = getUnitValue(h);
-    const label = getUnitName(h) || value;
-    if (!value) return;
-    if (selectedUnit && value === selectedUnit) return;
-    if (!units.has(value)) units.set(value, h);
-  });
-
-  const rows = Array.from(units.entries()).sort((a, b) => {
-    const aLabel = getUnitName(a[1]) || a[0];
-    const bLabel = getUnitName(b[1]) || b[0];
-    return aLabel.localeCompare(bLabel);
-  });
-
-  if (!rows.length) {
-    unitResultsEl.className = 'unit-list empty';
-    unitResultsEl.innerHTML = 'No hunt units match the current filters.';
-    return;
-  }
-
-  unitResultsEl.className = 'unit-list';
-  unitResultsEl.innerHTML = rows.map(([value, hunt]) => {
-    const label = getUnitName(hunt) || value;
-    const unitCode = getUnitCode(hunt);
-    const meta = [
-      unitCode && unitCode !== label ? `Unit ${unitCode}` : '',
-      getSpeciesDisplay(hunt),
-      getRegion(hunt)
-    ].filter(Boolean).join(' • ');
-    return `
-      <div class="unit-chip">
-        <div>
-          <strong>${escapeHtml(label)}</strong>
-          <span>${escapeHtml(meta || value)}</span>
-        </div>
-        <button type="button" class="btn-primary js-select-unit" data-unit="${escapeHtml(value)}">Select</button>
-      </div>
-    `;
-  }).join('');
-}
-
 function renderHuntResults() {
   if (!huntResultsEl && !huntResultsMobileEl) return;
   const selectedCode = selectedHunt ? getHuntCode(selectedHunt) : '';
@@ -2753,9 +2638,7 @@ function selectUnitByValue(unitValue) {
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
-  renderUnitResults();
   renderHuntResults();
-  updateGoogleMapsEmbed(hunt);
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
@@ -2782,9 +2665,7 @@ function selectHuntByCode(huntCode) {
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
-  renderUnitResults();
   renderHuntResults();
-  updateGoogleMapsEmbed(hunt);
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
@@ -2819,9 +2700,7 @@ function resetPlanner() {
   renderAreaInfo();
   renderOutfitters();
   renderOutfitterResults();
-  renderUnitResults();
   renderHuntResults();
-  updateGoogleMapsEmbed();
   updateCesiumView();
   updateDwrBoundaryEmbed();
   refreshLiveBoundaryFilter();
@@ -2833,7 +2712,6 @@ function resetPlanner() {
     huntResultsLimit = 100;
     refreshSelectionMatrix();
     renderUnitCenters();
-    renderUnitResults();
     renderHuntResults();
     refreshLiveBoundaryFilter();
   };
@@ -2851,9 +2729,7 @@ if (unitFilter) {
       renderAreaInfo();
       renderOutfitters();
       renderOutfitterResults();
-      renderUnitResults();
       renderHuntResults();
-      updateGoogleMapsEmbed();
       updateCesiumView();
       updateDwrBoundaryEmbed();
       refreshLiveBoundaryFilter();
@@ -2872,7 +2748,6 @@ if (basemapSelect) {
     });
     (basemaps[basemapSelect.value] || basemaps.usgs).addTo(map);
     updateMapAppearance();
-    updateGoogleMapsEmbed(selectedHunt);
     updateCesiumView(selectedHunt);
 
     if (toggleLiveUnits?.checked && !liveHuntUnitsLayer) buildLiveHuntUnitsLayer();
@@ -2912,20 +2787,17 @@ if (toggleBLM) {
   });
 }
 
-if (toggleUnits) toggleUnits.addEventListener('change', renderUnitCenters);
-
 [toggleSITLA, toggleState, togglePrivate].forEach(el => {
   if (!el) return;
   el.addEventListener('change', renderOwnershipPlaceholders);
 });
 
-[toggleOutfitters, toggleCPO, toggleCPG].forEach(el => {
-  if (!el) return;
-  el.addEventListener('change', () => {
+if (toggleOutfitters) {
+  toggleOutfitters.addEventListener('change', () => {
     renderOutfitters();
     renderOutfitterResults();
   });
-});
+}
 
 if (openBoundaryBtn) {
   openBoundaryBtn.addEventListener('click', () => {
@@ -2951,12 +2823,6 @@ if (aboutOkBtn) {
     try {
       localStorage.setItem('uogaHuntPlannerInfoSeen', '1');
     } catch (e) {}
-  });
-}
-
-if (toggleGooglePanelBtn) {
-  toggleGooglePanelBtn.addEventListener('click', () => {
-    toggleEmbeddedPanel(toggleGooglePanelBtn, googleMapsEmbed);
   });
 }
 
@@ -3036,20 +2902,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-map.on('click', e => {
-  if (suppressNextMapClickInfo) {
-    suppressNextMapClickInfo = false;
-    return;
-  }
-  setClickInfoHtml(`<strong>Map Click:</strong> ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
-});
-
-map.on('mouseout', () => {
-  hideBoundaryHoverTooltip();
-});
-
 map.on('zoomend', () => {
-  refreshBoundaryHoverTooltip();
   refreshLiveBoundaryFilter();
   updateContextualLandOverlayVisibility();
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
@@ -3062,32 +2915,6 @@ map.on('zoomend', () => {
     });
   }
 });
-
-map.on('moveend', () => {
-  refreshBoundaryHoverTooltip();
-});
-
-const mapContainerEl = map.getContainer ? map.getContainer() : null;
-if (mapContainerEl) {
-  mapContainerEl.addEventListener('mousemove', evt => {
-    if (!map || !evt) return;
-    const point = map.mouseEventToContainerPoint(evt);
-    updateBoundaryHoverAtContainerPoint(point);
-  }, true);
-
-  mapContainerEl.addEventListener('mouseleave', () => {
-    hideBoundaryHoverTooltip();
-  }, true);
-
-  mapContainerEl.addEventListener('dblclick', evt => {
-    if (!selectedHunt || !map) return;
-    clearLandOverlayClickTimer();
-    const point = map.mouseEventToContainerPoint(evt);
-    openBoundaryChoicePopupAtContainerPoint(point, evt);
-    evt.preventDefault();
-    evt.stopPropagation();
-  }, true);
-}
 
 (async function init() {
   try {
@@ -3117,10 +2944,8 @@ if (mapContainerEl) {
     renderAreaInfo();
     renderOutfitters();
     renderOutfitterResults();
-    renderUnitResults();
     renderHuntResults();
     initCesiumViewer();
-    updateGoogleMapsEmbed();
     updateCesiumView();
     updateDwrBoundaryEmbed();
     try {
@@ -3143,10 +2968,6 @@ if (mapContainerEl) {
     setHtml([huntResultsEl, huntResultsMobileEl], `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`);
     setHtml([resultsEl, resultsMobileEl], `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`);
     setHtml([areaInfoEl, areaInfoMobileEl], 'App failed to initialize. Open browser console for details.');
-    if (unitResultsEl) {
-      unitResultsEl.className = 'unit-list empty';
-      unitResultsEl.innerHTML = `Unable to load hunt units: ${escapeHtml(err.message || String(err))}`;
-    }
     setBuildMarker();
     window.setTimeout(() => map.invalidateSize(), 0);
   }
