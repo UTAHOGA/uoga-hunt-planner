@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-68';
+const APP_BUILD = 'build-2026-03-21-70';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -1137,6 +1137,17 @@ function clearFederalBadgeMarkers(badgeLayer, badgeMap) {
   badgeMap.clear();
 }
 
+function rebuildFederalBadgesFromFeatureLayer(featureLayer, badgeLayer, badgeMap, labelGetter, iconUrl) {
+  if (!featureLayer || !badgeLayer || typeof featureLayer.eachFeature !== 'function') return;
+  clearFederalBadgeMarkers(badgeLayer, badgeMap);
+  featureLayer.eachFeature(layer => {
+    const feature = layer?.feature;
+    if (!feature) return;
+    const label = labelGetter(feature?.properties || feature?.attributes || {});
+    addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl);
+  });
+}
+
 function addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl) {
   if (!badgeLayer || !feature) return;
   const key = getFeatureMarkerKey(feature, label);
@@ -2212,7 +2223,7 @@ function updateInteractivePanePriority() {
   if (!map || !map.getPane) return;
   const huntPane = map.getPane('huntPane');
   if (huntPane) {
-    huntPane.style.zIndex = selectedHunt ? '425' : '445';
+    huntPane.style.zIndex = '445';
   }
 }
 function renderLiveHuntUnitsFeatures(features) {
@@ -2233,6 +2244,17 @@ function renderLiveHuntUnitsFeatures(features) {
       pane: 'huntPane',
       style: feature => getBoundaryFeatureStyle(feature),
       onEachFeature: (feature, layer) => {
+        const boundaryLabel = safe(getBoundaryFeatureName(feature)).trim();
+        if (boundaryLabel) {
+          layer.bindTooltip(boundaryLabel, {
+            permanent: false,
+            sticky: true,
+            direction: 'top',
+            offset: [0, -6],
+            opacity: 0.96,
+            className: 'hunt-hover-tooltip'
+          });
+        }
         layer.on('click', evt => {
           if (selectedHunt) return;
           openBoundaryChoicePopup(layer, feature, evt, { centered: true, selectionMode: 'initial' });
@@ -2280,10 +2302,8 @@ function buildUSFSLayer() {
     style: () => ({ color: '#476f2d', weight: 2.5, fillOpacity: 0.02 })
   });
 
-  usfsDistrictLayer.on('createfeature', evt => {
-    const feature = evt.feature;
-    const forest = getUsfsLabel(feature?.properties || feature?.attributes || {});
-    addFederalBadgeMarker(feature, forest, usfsBadgeLayer, usfsBadgeMarkers, USFS_BADGE_URL);
+  usfsDistrictLayer.on('load', () => {
+    rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2306,10 +2326,8 @@ function buildBLMLayer() {
     style: () => ({ color: '#b9722f', weight: 2.3, fillOpacity: 0.02 })
   });
 
-  blmDistrictLayer.on('createfeature', evt => {
-    const feature = evt.feature;
-    const unit = getBlmLabel(feature?.properties || feature?.attributes || {});
-    addFederalBadgeMarker(feature, unit, blmBadgeLayer, blmBadgeMarkers, BLM_BADGE_URL);
+  blmDistrictLayer.on('load', () => {
+    rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2343,6 +2361,7 @@ function updateContextualLandOverlayVisibility() {
   if (usfsDistrictLayer) {
     if (toggleUSFS?.checked && show) {
       if (!map.hasLayer(usfsDistrictLayer)) usfsDistrictLayer.addTo(map);
+      rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL);
       if (!map.hasLayer(usfsBadgeLayer)) usfsBadgeLayer.addTo(map);
     } else if (map.hasLayer(usfsDistrictLayer)) {
       map.removeLayer(usfsDistrictLayer);
@@ -2353,6 +2372,7 @@ function updateContextualLandOverlayVisibility() {
   if (blmDistrictLayer) {
     if (toggleBLM?.checked && show) {
       if (!map.hasLayer(blmDistrictLayer)) blmDistrictLayer.addTo(map);
+      rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL);
       if (!map.hasLayer(blmBadgeLayer)) blmBadgeLayer.addTo(map);
     } else if (map.hasLayer(blmDistrictLayer)) {
       map.removeLayer(blmDistrictLayer);
@@ -2933,11 +2953,6 @@ function selectUnitByValue(unitValue, options = {}) {
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
-  if (options.selectionMode === 'switch') {
-    panToSelectedBoundary();
-  } else {
-    zoomToSelectedBoundary();
-  }
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
 }
@@ -2965,11 +2980,6 @@ function selectHuntByCode(huntCode, options = {}) {
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
-  if (options.selectionMode === 'switch') {
-    panToSelectedBoundary();
-  } else {
-    zoomToSelectedBoundary();
-  }
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
 }
