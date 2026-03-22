@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-22-76';
+const APP_BUILD = 'build-2026-03-22-114';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -36,8 +36,6 @@ const DWR_HUNT_BOUNDARY_LAYER = `${DWR_MAPSERVER}/0`;
 const DWR_HUNT_INFO_TABLE =
   'https://dwrmapserv.utah.gov/arcgis/rest/services/hunt/Boundaries_and_Tables/MapServer/1/query';
 const LOCAL_HUNT_BOUNDARIES_PATH = 'https://json.uoga.workers.dev/hunt-boundaries';
-const USFS_LOGO_URL = 'https://static.wixstatic.com/media/43f827_d54826fa897541e6810ba74cc2fcf9d7~mv2.png';
-const BLM_LOGO_URL = 'https://static.wixstatic.com/media/43f827_612ebfea933a496784ac9e0ea3442f29~mv2.png';
 const HUNT_DATA_SOURCES = [
   {
     label: 'Buck Deer',
@@ -993,9 +991,9 @@ function attachHuntResultsInteraction(container) {
   });
 }
 
-function getUsfsLabel(properties) {
+function getUsfsLabel(properties, feature = null) {
   const p = properties || {};
-  return firstNonEmpty(
+  const label = firstNonEmpty(
     p.FORESTNAME,
     p.FORESTNAMECOMMON,
     p.FORESTSHORTNAME,
@@ -1006,6 +1004,59 @@ function getUsfsLabel(properties) {
     p.LABEL,
     'US Forest Service Unit'
   );
+
+  const normalized = label
+    .replace(/^Manti-La Sal National Forest$/i, 'Manti LaSal USFS')
+    .replace(/^Fishlake National Forest$/i, 'Fishlake USFS')
+    .replace(/^Dixie National Forest$/i, 'Dixie USFS')
+    .replace(/^Ashley National Forest$/i, 'Ashley USFS')
+    .replace(/^Uinta-Wasatch-Cache National Forest$/i, 'Uintah USFS')
+    .replace(/ National Forest$/i, ' USFS')
+    .trim();
+
+  if (normalized !== 'Manti LaSal USFS' || !feature?.geometry) return normalized;
+
+  if (pointInGeometry({ lat: 39.28, lng: -111.33 }, feature.geometry)) return 'Manti LaSal USFS';
+  if (pointInGeometry({ lat: 38.58, lng: -109.23 }, feature.geometry)) return 'LaSals USFS';
+  if (pointInGeometry({ lat: 38.02, lng: -109.35 }, feature.geometry)) return 'Manti LaSal USFS';
+  return normalized;
+}
+
+function normalizeBlmDistrictName(value) {
+  const raw = safe(value).trim();
+  if (!raw) return '';
+  const normalized = raw
+    .replace(/\s+field\s+office$/i, '')
+    .replace(/\s+district\s+office$/i, ' District')
+    .replace(/\s+office$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const slug = slugify(normalized);
+  const exactMap = {
+    richfield: 'Color Country District',
+    fillmore: 'West Desert District',
+    'salt-lake': 'West Desert District',
+    'salt-lake-city': 'West Desert District',
+    cedarcity: 'Color Country District',
+    'cedar-city': 'Color Country District',
+    'st-george': 'Color Country District',
+    'green-river': 'Green River District',
+    vernal: 'Green River District',
+    price: 'Green River District',
+    moab: 'Canyon Country District',
+    monticello: 'Canyon Country District',
+    kanab: 'Paria River District',
+    'grand-staircase-kanab': 'Paria River District',
+    'grand-staircase': 'Paria River District',
+    'west-desert-district': 'West Desert District',
+    'green-river-district': 'Green River District',
+    'color-country-district': 'Color Country District',
+    'paria-river-district': 'Paria River District',
+    'canyon-country-district': 'Canyon Country District'
+  };
+
+  return exactMap[slug] || normalized;
 }
 
 function getBlmLabel(properties) {
@@ -1024,11 +1075,10 @@ function getBlmLabel(properties) {
     'BLM Utah Administrative Unit'
   );
 
-  return label
-    .replace(/\s+field\s+office$/i, ' District')
-    .replace(/\s+district\s+office$/i, ' District')
-    .replace(/\s+office$/i, '')
-    .trim();
+  const districtName = normalizeBlmDistrictName(label);
+  if (!districtName) return '';
+  if (/ BLM$/i.test(districtName)) return districtName;
+  return `${districtName} BLM`;
 }
 
 function getRingArea(ring = []) {
@@ -1073,7 +1123,7 @@ function getRingCentroid(ring = []) {
 
 function getRepresentativePolygonRing(geometry) {
   if (!geometry) return null;
-  const { type, coordinates } = geometry;
+  const { type, coordinates, rings } = geometry;
   if (type === 'Polygon' && Array.isArray(coordinates?.[0])) {
     return coordinates[0];
   }
@@ -1082,6 +1132,18 @@ function getRepresentativePolygonRing(geometry) {
     let bestArea = -Infinity;
     coordinates.forEach(poly => {
       const ring = poly?.[0];
+      const area = getRingArea(ring);
+      if (area > bestArea) {
+        bestArea = area;
+        bestRing = ring;
+      }
+    });
+    return bestRing;
+  }
+  if (Array.isArray(rings?.[0])) {
+    let bestRing = null;
+    let bestArea = -Infinity;
+    rings.forEach(ring => {
       const area = getRingArea(ring);
       if (area > bestArea) {
         bestArea = area;
@@ -1145,20 +1207,115 @@ function getFeatureMarkerKey(feature, fallbackLabel = '') {
   ).toString();
 }
 
+const FEDERAL_BADGE_ANCHORS = {
+  'Ashley USFS': [
+    [40.55, -109.86]
+  ],
+  'Dixie USFS': [
+    [37.69, -112.86]
+  ],
+  'Fishlake USFS': [
+    [38.44, -112.00]
+  ],
+  'Manti LaSal USFS': [
+    [39.34, -111.22],
+    [37.75, -109.56]
+  ],
+  'LaSals USFS': [
+    [38.66, -108.93]
+  ],
+  'Uintah USFS': [
+    [40.10, -111.54]
+  ],
+  'Wasatch USFS': [
+    [40.56, -111.06]
+  ],
+  'Cache USFS': [
+    [41.68, -111.57]
+  ],
+  'West Desert District BLM': [
+    [40.58, -113.62]
+  ],
+  'Green River District BLM': [
+    [39.70, -109.74]
+  ],
+  'Color Country District BLM': [
+    [38.92, -113.42]
+  ],
+  'Paria River District BLM': [
+    [37.15, -111.89]
+  ],
+  'Canyon Country District BLM': [
+    [38.66, -109.78]
+  ]
+};
+
+function getPreferredFederalBadgeCenter(label, feature, labelUsage) {
+  const candidates = FEDERAL_BADGE_ANCHORS[safe(label).trim()] || [];
+  if (!candidates.length) return null;
+
+  const usedIndexes = labelUsage.get(label) || new Set();
+  for (let i = 0; i < candidates.length; i++) {
+    if (usedIndexes.has(i)) continue;
+    const [lat, lng] = candidates[i];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    usedIndexes.add(i);
+    labelUsage.set(label, usedIndexes);
+    return [lat, lng];
+  }
+
+  for (let i = 0; i < candidates.length; i++) {
+    const [lat, lng] = candidates[i];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+    return [lat, lng];
+  }
+
+  return null;
+}
+
 function createFederalBadgeIcon(iconUrl, label) {
+  const zoom = map?.getZoom?.() ?? 6;
+  const showLabel = zoom >= 8;
+  const iconSize = showLabel ? [132, 86] : [44, 44];
+  const iconAnchor = showLabel ? [66, 43] : [22, 22];
   const safeLabel = escapeHtml(label || '');
   const safeIconUrl = escapeHtml(iconUrl || '');
   return L.divIcon({
     className: 'federal-badge-marker',
-    iconSize: [92, 52],
-    iconAnchor: [46, 26],
+    iconSize,
+    iconAnchor,
     html: `
       <div class="federal-badge-shell">
         <img src="${safeIconUrl}" alt="${safeLabel}" class="federal-badge-logo">
-        <div class="federal-badge-name">${safeLabel}</div>
+        ${showLabel ? `<div class="federal-badge-name">${safeLabel}</div>` : ''}
       </div>
     `
   });
+}
+
+function getRenderedLayerCenter(layer, feature) {
+  if (layer && typeof layer.getBounds === 'function') {
+    try {
+      const bounds = layer.getBounds();
+      if (bounds && typeof bounds.getCenter === 'function') {
+        const center = bounds.getCenter();
+        if (Number.isFinite(center?.lat) && Number.isFinite(center?.lng)) {
+          return [center.lat, center.lng];
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (layer && typeof layer.getLatLng === 'function') {
+    try {
+      const center = layer.getLatLng();
+      if (Number.isFinite(center?.lat) && Number.isFinite(center?.lng)) {
+        return [center.lat, center.lng];
+      }
+    } catch (e) {}
+  }
+
+  return getFeatureBoundsCenter(feature);
 }
 
 function clearFederalBadgeMarkers(badgeLayer, badgeMap) {
@@ -1169,21 +1326,98 @@ function clearFederalBadgeMarkers(badgeLayer, badgeMap) {
 }
 
 function rebuildFederalBadgesFromFeatureLayer(featureLayer, badgeLayer, badgeMap, labelGetter, iconUrl) {
-  if (!featureLayer || !badgeLayer || typeof featureLayer.eachFeature !== 'function') return;
+  if (!featureLayer || !badgeLayer) return;
   clearFederalBadgeMarkers(badgeLayer, badgeMap);
-  featureLayer.eachFeature(layer => {
+  const labelUsage = new Map();
+
+  const renderLayerBadge = layer => {
     const feature = layer?.feature;
     if (!feature) return;
-    const label = labelGetter(feature?.properties || feature?.attributes || {});
-    addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl);
-  });
+    const label = labelGetter(feature?.properties || feature?.attributes || {}, feature);
+    addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl, layer, labelUsage);
+  };
+
+  if (typeof featureLayer.eachFeature === 'function') {
+    featureLayer.eachFeature(renderLayerBadge);
+  }
+
+  if (!badgeMap.size && typeof featureLayer.eachLayer === 'function') {
+    featureLayer.eachLayer(renderLayerBadge);
+  }
+
+  if (!badgeMap.size && featureLayer._layers) {
+    Object.values(featureLayer._layers).forEach(renderLayerBadge);
+  }
 }
 
-function addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl) {
+function addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl, renderedLayer = null, labelUsage = new Map()) {
   if (!badgeLayer || !feature) return;
   const key = getFeatureMarkerKey(feature, label);
-  if (!key || badgeMap.has(key)) return;
-  const center = getFeatureBoundsCenter(feature);
+  if (!key) return;
+
+  if (label === 'Manti LaSal USFS') {
+    const anchors = FEDERAL_BADGE_ANCHORS[label] || [];
+    anchors.forEach((center, index) => {
+      if (!Array.isArray(center) || center.length < 2) return;
+      const markerKey = `${key}:manti-${index}`;
+      if (badgeMap.has(markerKey)) return;
+      const marker = L.marker(center, {
+        icon: createFederalBadgeIcon(iconUrl, label),
+        pane: 'federalBadgePane',
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: -50
+      });
+      badgeMap.set(markerKey, marker);
+      badgeLayer.addLayer(marker);
+    });
+    return;
+  }
+
+  if (label === 'Uintah USFS') {
+    const primaryAnchors = FEDERAL_BADGE_ANCHORS[label] || [];
+    const wasatchAnchors = FEDERAL_BADGE_ANCHORS['Wasatch USFS'] || [];
+    const cacheAnchors = FEDERAL_BADGE_ANCHORS['Cache USFS'] || [];
+    [...primaryAnchors.map((center, index) => ({ center, markerLabel: label, markerKey: `${key}:uwc-${index}` })),
+     ...wasatchAnchors.map((center, index) => ({ center, markerLabel: 'Wasatch USFS', markerKey: `${key}:wasatch-${index}` })),
+     ...cacheAnchors.map((center, index) => ({ center, markerLabel: 'Cache USFS', markerKey: `${key}:cache-${index}` }))]
+      .forEach(({ center, markerLabel, markerKey }) => {
+        if (!Array.isArray(center) || center.length < 2) return;
+        if (badgeMap.has(markerKey)) return;
+        const marker = L.marker(center, {
+          icon: createFederalBadgeIcon(iconUrl, markerLabel),
+          pane: 'federalBadgePane',
+          interactive: false,
+          keyboard: false,
+          zIndexOffset: -50
+        });
+        badgeMap.set(markerKey, marker);
+        badgeLayer.addLayer(marker);
+      });
+    return;
+  }
+
+  if (label === 'Cache USFS') {
+    const anchors = FEDERAL_BADGE_ANCHORS[label] || [];
+    anchors.forEach((center, index) => {
+      if (!Array.isArray(center) || center.length < 2) return;
+      const markerKey = `${key}:cache-dup-${index}`;
+      if (badgeMap.has(markerKey)) return;
+      const marker = L.marker(center, {
+        icon: createFederalBadgeIcon(iconUrl, label),
+        pane: 'federalBadgePane',
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: -50
+      });
+      badgeMap.set(markerKey, marker);
+      badgeLayer.addLayer(marker);
+    });
+    return;
+  }
+
+  if (badgeMap.has(key)) return;
+  const center = getPreferredFederalBadgeCenter(label, feature, labelUsage);
   if (!center) return;
   const marker = L.marker(center, {
     icon: createFederalBadgeIcon(iconUrl, label),
@@ -1210,27 +1444,6 @@ function getFieldPreview(properties, preferredKeys = []) {
     .slice(0, 6)
     .map(key => `${key}: ${safe(p[key]).trim() || '[blank]'}`)
     .join(' | ');
-}
-
-function buildUsfsSignPopup(title) {
-  return `
-    <div class="land-sign-popup">
-      <div class="sign-board" style="background-image:url('${escapeHtml(USFS_LOGO_URL)}')">
-        <div class="sign-label">${escapeHtml(title)}</div>
-      </div>
-    </div>
-  `;
-}
-
-function buildBlmSignPopup(title, subtitle = '') {
-  return `
-    <div class="land-sign-popup">
-      <div class="sign-board" style="background-image:url('${escapeHtml(BLM_LOGO_URL)}')">
-        <div class="sign-label">${escapeHtml(title)}</div>
-        ${subtitle ? `<div class="sign-subtitle">${escapeHtml(subtitle)}</div>` : ''}
-      </div>
-    </div>
-  `;
 }
 
 function createDiamondIcon() {
@@ -1514,24 +1727,8 @@ let liveFilterToken = 0;
 let boundaryZoomToken = 0;
 let boundaryHoverTooltip = null;
 let suppressNextMapClickInfo = false;
-let overlayPrioritySource = '';
-let overlayPriorityUntil = 0;
 let usfsBadgeMarkers = new Map();
 let blmBadgeMarkers = new Map();
-
-function setOverlayPriority(source, evt) {
-  overlayPrioritySource = source;
-  overlayPriorityUntil = Date.now() + 300;
-  suppressNextMapClickInfo = true;
-
-  if (evt?.originalEvent) {
-    L.DomEvent.stopPropagation(evt.originalEvent);
-  }
-}
-
-function shouldYieldToOverlay(source) {
-  return overlayPriorityUntil > Date.now() && overlayPrioritySource && overlayPrioritySource !== source;
-}
 
 async function loadHuntData() {
   const merged = [];
@@ -1613,7 +1810,7 @@ async function loadOutfittersData() {
         ownerName: splitOwnerList(o.ownerName),
         speciesServed: Array.isArray(o.speciesServed) ? o.speciesServed.join(', ') : safe(o.speciesServed || o.species).trim(),
         unitsServed: Array.isArray(o.unitsServed) ? o.unitsServed.join(', ') : safe(o.unitsServed).trim(),
-        blmDistricts: Array.isArray(o.blmDistricts) ? o.blmDistricts.join(', ') : safe(o.blmDistricts).trim(),
+        blmDistricts: listify(o.blmDistricts).map(normalizeBlmDistrictName).filter(Boolean).join(', '),
         usfsForests: Array.isArray(o.usfsForests) ? o.usfsForests.join(', ') : safe(o.usfsForests || o.forestDistricts).trim()
       })).filter(o => o.listingName);
       console.log('Loaded outfitter dataset:', url);
@@ -2096,9 +2293,7 @@ function wireBoundaryChoicePopup(popup) {
 }
 
 function isLandOverlayPopupOpen() {
-  const popup = map?._popup;
-  const className = safe(popup?.options?.className);
-  return className.includes('usfs-sign-popup') || className.includes('blm-sign-popup');
+  return false;
 }
 
 function openBoundaryChoicePopup(layer, feature, evt, options = {}) {
@@ -2176,9 +2371,9 @@ function pointInPolygon(latlng, polygon) {
 function pointInGeometry(latlng, geometry) {
   const type = geometry?.type;
   const coords = geometry?.coordinates;
-  if (!type || !coords) return false;
-  if (type === 'Polygon') return pointInPolygon(latlng, coords);
-  if (type === 'MultiPolygon') return coords.some(poly => pointInPolygon(latlng, poly));
+  if (type === 'Polygon' && coords) return pointInPolygon(latlng, coords);
+  if (type === 'MultiPolygon' && coords) return coords.some(poly => pointInPolygon(latlng, poly));
+  if (Array.isArray(geometry?.rings)) return pointInPolygon(latlng, geometry.rings);
   return false;
 }
 
@@ -2215,17 +2410,28 @@ function updateBoundaryHoverTooltip(latlng) {
   }
 
   if (!boundaryHoverTooltip) {
-    boundaryHoverTooltip = L.tooltip({
-      permanent: false,
-      sticky: true,
-      direction: 'top',
-      offset: [0, -6],
-      opacity: 0.96,
-      className: 'hunt-hover-tooltip'
+    boundaryHoverTooltip = L.marker(latlng, {
+      pane: 'markerPane',
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 900,
+      icon: L.divIcon({
+        className: 'hunt-hover-label-marker',
+        iconSize: [1, 1],
+        iconAnchor: [0, 14],
+        html: `<span class="hunt-hover-label-text">${escapeHtml(boundaryLabel)}</span>`
+      })
     });
+  } else if (boundaryHoverTooltip.setIcon) {
+    boundaryHoverTooltip.setIcon(L.divIcon({
+      className: 'hunt-hover-label-marker',
+      iconSize: [1, 1],
+      iconAnchor: [0, 14],
+      html: `<span class="hunt-hover-label-text">${escapeHtml(boundaryLabel)}</span>`
+    }));
   }
 
-  boundaryHoverTooltip.setLatLng(latlng).setContent(boundaryLabel);
+  boundaryHoverTooltip.setLatLng(latlng);
   if (!map.hasLayer(boundaryHoverTooltip)) {
     boundaryHoverTooltip.addTo(map);
   }
@@ -2277,17 +2483,6 @@ function renderLiveHuntUnitsFeatures(features) {
       pane: 'huntPane',
       style: feature => getBoundaryFeatureStyle(feature),
       onEachFeature: (feature, layer) => {
-        const boundaryLabel = safe(getBoundaryFeatureName(feature)).trim();
-        if (boundaryLabel) {
-          layer.bindTooltip(boundaryLabel, {
-            permanent: false,
-            sticky: true,
-            direction: 'top',
-            offset: [0, -6],
-            opacity: 0.96,
-            className: 'hunt-hover-tooltip'
-          });
-        }
         layer.on('click', evt => {
           if (selectedHunt) return;
           openBoundaryChoicePopup(layer, feature, evt, { centered: true, selectionMode: 'initial' });
@@ -2380,11 +2575,7 @@ function applyLiveBoundaryWhere(whereClause) {
 
 function shouldShowContextualLandOverlay() {
   if (!map) return false;
-  return !!selectedHunt;
-}
-
-function canOpenLandOverlayPopup() {
-  return !!selectedHunt && shouldShowContextualLandOverlay();
+  return !!selectedHunt || hasActiveHuntFilters();
 }
 
 function updateContextualLandOverlayVisibility() {
@@ -2394,6 +2585,7 @@ function updateContextualLandOverlayVisibility() {
     if (toggleUSFS?.checked && show) {
       if (!map.hasLayer(usfsDistrictLayer)) usfsDistrictLayer.addTo(map);
       rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL);
+      setTimeout(() => rebuildFederalBadgesFromFeatureLayer(usfsDistrictLayer, usfsBadgeLayer, usfsBadgeMarkers, getUsfsLabel, USFS_BADGE_URL), 250);
       if (!map.hasLayer(usfsBadgeLayer)) usfsBadgeLayer.addTo(map);
     } else if (map.hasLayer(usfsDistrictLayer)) {
       map.removeLayer(usfsDistrictLayer);
@@ -2405,6 +2597,7 @@ function updateContextualLandOverlayVisibility() {
     if (toggleBLM?.checked && show) {
       if (!map.hasLayer(blmDistrictLayer)) blmDistrictLayer.addTo(map);
       rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL);
+      setTimeout(() => rebuildFederalBadgesFromFeatureLayer(blmDistrictLayer, blmBadgeLayer, blmBadgeMarkers, getBlmLabel, BLM_BADGE_URL), 250);
       if (!map.hasLayer(blmBadgeLayer)) blmBadgeLayer.addTo(map);
     } else if (map.hasLayer(blmDistrictLayer)) {
       map.removeLayer(blmDistrictLayer);

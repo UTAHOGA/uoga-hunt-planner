@@ -199,21 +199,53 @@
       font-weight: 700;
     }
 
-    .hunt-hover-tooltip {
-      border: 1px solid #b9906f;
-      border-radius: 6px;
-      background: rgba(255, 252, 246, 0.97);
-      color: var(--text);
-      box-shadow: 0 6px 16px rgba(78, 57, 33, .16);
+    .hunt-hover-tooltip,
+    .leaflet-tooltip.hunt-hover-tooltip {
+      border: 0;
+      border-radius: 0;
+      background: transparent !important;
+      color: #2e2216;
+      box-shadow: none !important;
       font-family: var(--font-ui);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       line-height: 1.2;
-      padding: 4px 8px;
+      padding: 0 !important;
+      margin: 0;
+      text-shadow:
+        0 1px 0 rgba(255,255,255,0.95),
+        0 0 8px rgba(255,255,255,0.9),
+        0 0 14px rgba(255,255,255,0.75);
     }
 
-    .hunt-hover-tooltip:before {
-      border-top-color: rgba(255, 252, 246, 0.97);
+    .hunt-hover-tooltip:before,
+    .leaflet-tooltip.hunt-hover-tooltip:before,
+    .leaflet-tooltip-top.hunt-hover-tooltip:before,
+    .leaflet-tooltip-bottom.hunt-hover-tooltip:before,
+    .leaflet-tooltip-left.hunt-hover-tooltip:before,
+    .leaflet-tooltip-right.hunt-hover-tooltip:before {
+      display: none !important;
+      border: 0 !important;
+    }
+
+    .hunt-hover-label-marker {
+      background: transparent !important;
+      border: 0 !important;
+    }
+
+    .hunt-hover-label-text {
+      display: inline-block;
+      color: #2e2216;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+      text-shadow:
+        0 1px 0 rgba(255,255,255,0.95),
+        0 0 8px rgba(255,255,255,0.9),
+        0 0 14px rgba(255,255,255,0.75);
+      pointer-events: none;
     }
 
     .federal-badge-marker {
@@ -225,29 +257,30 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      transform: translateY(-1px);
+      gap: 6px;
+      transform: translateY(-2px);
     }
 
     .federal-badge-logo {
-      width: 26px;
-      height: 26px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
-      filter: drop-shadow(0 2px 4px rgba(30, 22, 12, 0.22));
+      filter: drop-shadow(0 4px 8px rgba(30, 22, 12, 0.28));
       pointer-events: none;
     }
 
     .federal-badge-name {
-      max-width: 92px;
-      padding: 3px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(77, 49, 23, 0.18);
-      background: rgba(255, 255, 255, 0.97);
-      box-shadow: 0 4px 10px rgba(41, 27, 12, 0.12);
-      color: #3f2815;
-      font-size: 9px;
-      font-weight: 800;
-      line-height: 1.2;
+      max-width: 128px;
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(77, 49, 23, 0.16);
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 6px 14px rgba(41, 27, 12, 0.16);
+      color: #332111;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+      line-height: 1.15;
       text-align: center;
       white-space: normal;
       pointer-events: none;
@@ -2205,7 +2238,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
-    <script src="app.js?v=20260322-76"></script>
+    <script src="app.js?v=20260322-114"></script>
 </body>
 </html>
 
