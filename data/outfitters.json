@@ -43,7 +43,9 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Taylor Albrecht",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Fishlake",
       "Boulder/Kaiparowits",
@@ -53,8 +55,10 @@
       "Monroe",
       "Beaver, East"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Fishlake",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Fishlake"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -68,7 +72,9 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Alan Wood J.T. & Breanna Robbins",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Fishlake",
       "Boulder/Kaiparowits",
@@ -78,8 +84,10 @@
       "Monroe",
       "Beaver, East"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Fishlake",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Fishlake"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -89,11 +97,13 @@
     "verificationStatus": "Vetted",
     "website": "",
     "phone": "",
-    "email": "thealphaoutﬁtter@gmail.com",
+    "email": "thealphaoutfitter@gmail.com",
     "region": "Utah",
     "city": "",
     "ownerName": "Garrett Smith",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Fishlake",
       "Thousand Lakes",
@@ -105,8 +115,12 @@
       "Beaver, East",
       "Manti/San Rafael"
     ],
-    "blmDistricts": "Grand Staircase Kanab",
-    "usfsForests": "Duschene Dixie – Lake Powell Manti LaSal Fishlake",
+    "blmDistricts": [
+      "Grand Staircase Kanab"
+    ],
+    "usfsForests": [
+      "Duschene Dixie - Lake Powell Manti LaSal Fishlake"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -120,14 +134,18 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Brett Guymon",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Manti/San Rafael",
       "La Sal Mtns",
       "Dolores Triangle"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Manti LaSal",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Manti LaSal"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -141,15 +159,19 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Brett Guymon",
-    "speciesServed": "Elk",
+    "speciesServed": [
+      "Elk"
+    ],
     "unitsServed": [
       "Manti",
       "San Juan",
       "La Sal Mtns",
       "La Sal, Dolores Triangle"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Manti LaSal",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Manti LaSal"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -163,7 +185,9 @@
     "region": "Utah",
     "city": "",
     "ownerName": "JL Larsen",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Fishlake",
       "Thousand Lakes",
@@ -173,8 +197,10 @@
       "Mt Dutton",
       "Monroe"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Fishlake",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Fishlake"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -188,7 +214,9 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Slade Edwards",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Fishlake",
       "Thousand Lakes",
@@ -199,8 +227,10 @@
       "Monroe",
       "Beaver, East"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Fishlake Dixie-Lake Powell",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Fishlake Dixie-Lake Powell"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -214,10 +244,16 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Tim Pilling",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [],
-    "blmDistricts": "Grand Staircase Kanab",
-    "usfsForests": "UWC",
+    "blmDistricts": [
+      "Grand Staircase Kanab"
+    ],
+    "usfsForests": [
+      "UWC"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -231,14 +267,18 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Travis Kruckenberg",
-    "speciesServed": "Deer",
+    "speciesServed": [
+      "Deer"
+    ],
     "unitsServed": [
       "Manti/San Rafael",
       "La Sal Mtns",
       "Dolores Triangle"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Manti LaSal",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Manti LaSal"
+    ],
     "notes": "First-pass normalization only"
   },
   {
@@ -252,15 +292,19 @@
     "region": "Utah",
     "city": "",
     "ownerName": "Travis Kruckenberg",
-    "speciesServed": "Elk",
+    "speciesServed": [
+      "Elk"
+    ],
     "unitsServed": [
       "Manti",
       "San Juan",
       "La Sal Mtns",
       "La Sal, Dolores Triangle"
     ],
-    "blmDistricts": null,
-    "usfsForests": "Manti LaSal",
+    "blmDistricts": [],
+    "usfsForests": [
+      "Manti LaSal"
+    ],
     "notes": "First-pass normalization only"
   }
 ]
