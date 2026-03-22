@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-61';
+const APP_BUILD = 'build-2026-03-21-65';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -208,6 +208,9 @@ const OUTFITTER_CITY_LOOKUP = {
   'st. george': [37.0965, -113.5684],
   vernal: [40.4555, -109.5287]
 };
+
+const USFS_BADGE_URL = 'https://static.wixstatic.com/media/43f827_277ee2957d114252b7f8ea87c180b87d~mv2.png';
+const BLM_BADGE_URL = 'https://static.wixstatic.com/media/43f827_c5625163d0df428f8f873d6dc7a4bb81~mv2.png';
 
 const HUNT_TYPE_ORDER = [
   'General',
@@ -997,6 +1000,84 @@ function getBlmLabel(properties) {
     .trim();
 }
 
+function getFeatureBoundsCenter(feature) {
+  const geometry = feature?.geometry;
+  if (!geometry) return null;
+  const bounds = {
+    minLat: Infinity,
+    maxLat: -Infinity,
+    minLng: Infinity,
+    maxLng: -Infinity
+  };
+
+  if (Array.isArray(geometry.coordinates)) {
+    extendBoundsFromCoordinates(bounds, geometry.coordinates);
+  } else if (Array.isArray(geometry.rings)) {
+    extendBoundsFromCoordinates(bounds, geometry.rings);
+  } else if (Array.isArray(geometry.paths)) {
+    extendBoundsFromCoordinates(bounds, geometry.paths);
+  }
+
+  if (![bounds.minLat, bounds.maxLat, bounds.minLng, bounds.maxLng].every(Number.isFinite)) {
+    return null;
+  }
+
+  return [(bounds.minLat + bounds.maxLat) / 2, (bounds.minLng + bounds.maxLng) / 2];
+}
+
+function getFeatureMarkerKey(feature, fallbackLabel = '') {
+  const props = feature?.properties || feature?.attributes || {};
+  return firstNonEmpty(
+    props.OBJECTID,
+    props.OBJECTID_1,
+    props.ADMU_ID,
+    props.GLOBALID,
+    props.FID,
+    fallbackLabel
+  ).toString();
+}
+
+function createFederalBadgeIcon(iconUrl) {
+  return L.icon({
+    iconUrl,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -11],
+    className: 'federal-badge-icon'
+  });
+}
+
+function clearFederalBadgeMarkers(badgeLayer, badgeMap) {
+  if (badgeLayer) {
+    try { badgeLayer.clearLayers(); } catch (e) {}
+  }
+  badgeMap.clear();
+}
+
+function addFederalBadgeMarker(feature, label, badgeLayer, badgeMap, iconUrl) {
+  if (!badgeLayer || !feature) return;
+  const key = getFeatureMarkerKey(feature, label);
+  if (!key || badgeMap.has(key)) return;
+  const center = getFeatureBoundsCenter(feature);
+  if (!center) return;
+  const marker = L.marker(center, {
+    icon: createFederalBadgeIcon(iconUrl),
+    pane: 'federalBadgePane',
+    interactive: false,
+    keyboard: false,
+    zIndexOffset: -50
+  });
+  marker.bindTooltip(escapeHtml(label), {
+    permanent: false,
+    direction: 'top',
+    offset: [0, -8],
+    opacity: 0.92,
+    className: 'hunt-hover-tooltip'
+  });
+  badgeMap.set(key, marker);
+  badgeLayer.addLayer(marker);
+}
+
 function getFieldPreview(properties, preferredKeys = []) {
   const p = properties || {};
   const keys = Object.keys(p);
@@ -1223,6 +1304,8 @@ map.createPane('huntPane');
 map.getPane('huntPane').style.zIndex = 445;
 map.createPane('selectedHuntPane');
 map.getPane('selectedHuntPane').style.zIndex = 450;
+map.createPane('federalBadgePane');
+map.getPane('federalBadgePane').style.zIndex = 447;
 
 const basemaps = {
   osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1304,14 +1387,19 @@ let liveHuntUnitsLayer = null;
 let selectedBoundaryLayer = null;
 let usfsDistrictLayer = null;
 let blmDistrictLayer = null;
+let usfsBadgeLayer = null;
+let blmBadgeLayer = null;
 let liveLayerSource = 'none';
 let huntBoundaryData = null;
 let huntResultsLimit = 100;
 let liveFilterToken = 0;
 let boundaryZoomToken = 0;
+let boundaryHoverTooltip = null;
 let suppressNextMapClickInfo = false;
 let overlayPrioritySource = '';
 let overlayPriorityUntil = 0;
+let usfsBadgeMarkers = new Map();
+let blmBadgeMarkers = new Map();
 
 function setOverlayPriority(source, evt) {
   overlayPrioritySource = source;
@@ -1874,19 +1962,26 @@ function buildBoundaryChoicePopup(feature, matches) {
 function wireBoundaryChoicePopup(popup) {
   const popupEl = popup?.getElement?.();
   if (!popupEl) return;
+  const selectionMode = safe(popup?.options?.selectionMode).trim() || 'initial';
   popupEl.querySelectorAll('.hunt-choice-select').forEach(btn => {
     btn.addEventListener('click', evt => {
       evt.preventDefault();
       evt.stopPropagation();
       const code = safe(btn.getAttribute('data-hunt-code')).trim();
       if (!code) return;
-      selectHuntByCode(code);
+      selectHuntByCode(code, { selectionMode });
       try { map.closePopup(); } catch (e) {}
     });
   });
 }
 
-function openBoundaryChoicePopup(layer, feature, evt) {
+function isLandOverlayPopupOpen() {
+  const popup = map?._popup;
+  const className = safe(popup?.options?.className);
+  return className.includes('usfs-sign-popup') || className.includes('blm-sign-popup');
+}
+
+function openBoundaryChoicePopup(layer, feature, evt, options = {}) {
   const matches = findMatchingHuntsForBoundaryFeature(feature);
   if (!matches.length) return;
 
@@ -1897,15 +1992,40 @@ function openBoundaryChoicePopup(layer, feature, evt) {
   }
 
   suppressNextMapClickInfo = true;
-  layer.bindPopup(buildBoundaryChoicePopup(feature, matches), {
+  const popupLatLng = options.centered && map && typeof map.getCenter === 'function'
+    ? map.getCenter()
+    : evt.latlng;
+  const popup = L.popup({
     className: 'hunt-choice-popup-wrap',
     maxWidth: 560,
     minWidth: 420,
     autoPan: true,
-    keepInView: true
+    keepInView: true,
+    selectionMode: options.selectionMode || 'initial'
+  })
+    .setLatLng(popupLatLng)
+    .setContent(buildBoundaryChoicePopup(feature, matches));
+  popup.openOn(map);
+  setTimeout(() => wireBoundaryChoicePopup(popup), 0);
+}
+
+function panToSelectedBoundary() {
+  if (!selectedHunt || !map) return;
+  const boundaryCenter = getSelectedBoundaryCenter(selectedHunt);
+  const huntLat = getHuntLat(selectedHunt);
+  const huntLng = getHuntLng(selectedHunt);
+  const trustedCenter = getTrustedUnitCenter(selectedHunt);
+  const center =
+    (boundaryCenter && [boundaryCenter.lat, boundaryCenter.lng]) ||
+    (Number.isFinite(huntLat) && Number.isFinite(huntLng) ? [huntLat, huntLng] : null) ||
+    trustedCenter ||
+    null;
+  if (!center) return;
+  map.panTo(center, {
+    animate: true,
+    duration: 1.2,
+    easeLinearity: 0.22
   });
-  layer.once('popupopen', e => wireBoundaryChoicePopup(e.popup));
-  layer.openPopup(evt.latlng);
 }
 
 function pointInRing(latlng, ring) {
@@ -1955,6 +2075,42 @@ function findBoundaryLayerAtLatLng(latlng) {
   return found;
 }
 
+function hideBoundaryHoverTooltip() {
+  if (!boundaryHoverTooltip) return;
+  try { map.removeLayer(boundaryHoverTooltip); } catch (e) {}
+  boundaryHoverTooltip = null;
+}
+
+function updateBoundaryHoverTooltip(latlng) {
+  if (!map || !latlng || !liveHuntUnitsLayer || !map.hasLayer(liveHuntUnitsLayer)) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+
+  const layer = findBoundaryLayerAtLatLng(latlng);
+  const boundaryLabel = safe(getBoundaryFeatureName(layer?.feature)).trim();
+  if (!boundaryLabel) {
+    hideBoundaryHoverTooltip();
+    return;
+  }
+
+  if (!boundaryHoverTooltip) {
+    boundaryHoverTooltip = L.tooltip({
+      permanent: false,
+      sticky: true,
+      direction: 'top',
+      offset: [0, -6],
+      opacity: 0.96,
+      className: 'hunt-hover-tooltip'
+    });
+  }
+
+  boundaryHoverTooltip.setLatLng(latlng).setContent(boundaryLabel);
+  if (!map.hasLayer(boundaryHoverTooltip)) {
+    boundaryHoverTooltip.addTo(map);
+  }
+}
+
 function isBoundaryFeatureSelected(feature) {
   if (!selectedHunt || !feature) return false;
   const matchSets = buildBoundaryMatchSets(selectedHunt);
@@ -2001,18 +2157,9 @@ function renderLiveHuntUnitsFeatures(features) {
       pane: 'huntPane',
       style: feature => getBoundaryFeatureStyle(feature),
       onEachFeature: (feature, layer) => {
-        const boundaryLabel = safe(getBoundaryFeatureName(feature)).trim();
-        if (boundaryLabel) {
-          layer.bindTooltip(boundaryLabel, {
-            sticky: true,
-            direction: 'top',
-            offset: [0, -6],
-            opacity: 0.96,
-            className: 'hunt-hover-tooltip'
-          });
-        }
         layer.on('click', evt => {
-          openBoundaryChoicePopup(layer, feature, evt);
+          if (selectedHunt) return;
+          openBoundaryChoicePopup(layer, feature, evt, { centered: true, selectionMode: 'initial' });
         });
       }
     }
@@ -2044,6 +2191,11 @@ function buildUSFSLayer() {
   if (usfsDistrictLayer) {
     try { map.removeLayer(usfsDistrictLayer); } catch (e) {}
   }
+  if (usfsBadgeLayer) {
+    try { map.removeLayer(usfsBadgeLayer); } catch (e) {}
+  }
+  usfsBadgeLayer = L.layerGroup();
+  clearFederalBadgeMarkers(usfsBadgeLayer, usfsBadgeMarkers);
 
   usfsDistrictLayer = L.esri.featureLayer({
     url: 'https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_ForestSystemBoundaries_01/MapServer/0',
@@ -2052,21 +2204,10 @@ function buildUSFSLayer() {
     style: () => ({ color: '#476f2d', weight: 2.5, fillOpacity: 0.02 })
   });
 
-  usfsDistrictLayer.bindPopup(layer => {
-    const p = layer.feature?.properties || {};
-    const forest = getUsfsLabel(p);
-    return buildUsfsSignPopup(forest);
-  }, { className: 'usfs-sign-popup' });
-
-  usfsDistrictLayer.on('click', evt => {
-    if (!canOpenLandOverlayPopup()) return;
-    setOverlayPriority('usfs', evt);
-    const p = evt.layer?.feature?.properties || {};
-    const forest = getUsfsLabel(p);
-    L.popup({ className: 'usfs-sign-popup' })
-      .setLatLng(evt.latlng)
-      .setContent(buildUsfsSignPopup(forest))
-      .openOn(map);
+  usfsDistrictLayer.on('createfeature', evt => {
+    const feature = evt.feature;
+    const forest = getUsfsLabel(feature?.properties || feature?.attributes || {});
+    addFederalBadgeMarker(feature, forest, usfsBadgeLayer, usfsBadgeMarkers, USFS_BADGE_URL);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2077,6 +2218,11 @@ function buildBLMLayer() {
   if (blmDistrictLayer) {
     try { map.removeLayer(blmDistrictLayer); } catch (e) {}
   }
+  if (blmBadgeLayer) {
+    try { map.removeLayer(blmBadgeLayer); } catch (e) {}
+  }
+  blmBadgeLayer = L.layerGroup();
+  clearFederalBadgeMarkers(blmBadgeLayer, blmBadgeMarkers);
 
   blmDistrictLayer = L.esri.featureLayer({
     url: 'https://gis.blm.gov/utarcgis/rest/services/AdminBoundaries/BLM_UT_ADMU/FeatureServer/0',
@@ -2084,21 +2230,10 @@ function buildBLMLayer() {
     style: () => ({ color: '#b9722f', weight: 2.3, fillOpacity: 0.02 })
   });
 
-  blmDistrictLayer.bindPopup(layer => {
-    const p = layer.feature?.properties || {};
-    return buildBlmSignPopup(getBlmLabel(p), 'Utah District');
-  }, { className: 'blm-sign-popup' });
-
-  blmDistrictLayer.on('click', evt => {
-    if (!canOpenLandOverlayPopup()) return;
-    if (shouldYieldToOverlay('blm')) return;
-    setOverlayPriority('blm', evt);
-    const p = evt.layer?.feature?.properties || {};
-    const unit = getBlmLabel(p);
-    L.popup({ className: 'blm-sign-popup' })
-      .setLatLng(evt.latlng)
-      .setContent(buildBlmSignPopup(unit, 'Utah District'))
-      .openOn(map);
+  blmDistrictLayer.on('createfeature', evt => {
+    const feature = evt.feature;
+    const unit = getBlmLabel(feature?.properties || feature?.attributes || {});
+    addFederalBadgeMarker(feature, unit, blmBadgeLayer, blmBadgeMarkers, BLM_BADGE_URL);
   });
 
   updateContextualLandOverlayVisibility();
@@ -2133,17 +2268,20 @@ function updateContextualLandOverlayVisibility() {
   if (usfsDistrictLayer) {
     if (toggleUSFS?.checked && show) {
       if (!map.hasLayer(usfsDistrictLayer)) usfsDistrictLayer.addTo(map);
-      if (typeof usfsDistrictLayer.bringToFront === 'function') usfsDistrictLayer.bringToFront();
+      if (!map.hasLayer(usfsBadgeLayer)) usfsBadgeLayer.addTo(map);
     } else if (map.hasLayer(usfsDistrictLayer)) {
       map.removeLayer(usfsDistrictLayer);
+      if (usfsBadgeLayer && map.hasLayer(usfsBadgeLayer)) map.removeLayer(usfsBadgeLayer);
     }
   }
 
   if (blmDistrictLayer) {
     if (toggleBLM?.checked && show) {
       if (!map.hasLayer(blmDistrictLayer)) blmDistrictLayer.addTo(map);
+      if (!map.hasLayer(blmBadgeLayer)) blmBadgeLayer.addTo(map);
     } else if (map.hasLayer(blmDistrictLayer)) {
       map.removeLayer(blmDistrictLayer);
+      if (blmBadgeLayer && map.hasLayer(blmBadgeLayer)) map.removeLayer(blmBadgeLayer);
     }
   }
 }
@@ -2284,23 +2422,25 @@ async function zoomToSelectedBoundary() {
       const tempLayer = L.geoJSON(localFeatures);
       const localBounds = tempLayer.getBounds();
       if (localBounds && localBounds.isValid()) {
-        const tighterBounds = localBounds.pad(-0.035);
+        const looserBounds = localBounds.pad(0.16);
         const mapWidth = map.getSize ? map.getSize().x : window.innerWidth;
         const isDesktopLayout = mapWidth >= 1100;
         const paddingTopLeft = isDesktopLayout ? [260, 70] : [12, 12];
         const paddingBottomRight = isDesktopLayout ? [360, 170] : [12, 12];
 
         if (typeof map.flyToBounds === 'function') {
-          map.flyToBounds(tighterBounds.isValid() ? tighterBounds : localBounds, {
+          map.flyToBounds(looserBounds.isValid() ? looserBounds : localBounds, {
             paddingTopLeft,
             paddingBottomRight,
+            maxZoom: 8,
             duration: 2.8,
             easeLinearity: 0.18
           });
         } else {
-          map.fitBounds(tighterBounds.isValid() ? tighterBounds : localBounds, {
+          map.fitBounds(looserBounds.isValid() ? looserBounds : localBounds, {
             paddingTopLeft,
-            paddingBottomRight
+            paddingBottomRight,
+            maxZoom: 8
           });
         }
         return;
@@ -2371,13 +2511,15 @@ async function zoomToSelectedBoundary() {
       map.flyToBounds(bounds, {
         paddingTopLeft,
         paddingBottomRight,
+        maxZoom: 8,
         duration: 2.8,
         easeLinearity: 0.18
       });
     } else {
       map.fitBounds(bounds, {
         paddingTopLeft,
-        paddingBottomRight
+        paddingBottomRight,
+        maxZoom: 8
       });
     }
   } catch (err) {
@@ -2688,7 +2830,7 @@ function renderOutfitterResults() {
   `).join(''));
 }
 
-function selectUnitByValue(unitValue) {
+function selectUnitByValue(unitValue, options = {}) {
   const hunt = huntData.find(h => {
     return getUnitValue(h) === unitValue || getUnitName(h) === unitValue || getUnitCode(h) === unitValue;
   });
@@ -2716,12 +2858,16 @@ function selectUnitByValue(unitValue) {
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
-  zoomToSelectedBoundary();
+  if (options.selectionMode === 'switch') {
+    panToSelectedBoundary();
+  } else {
+    zoomToSelectedBoundary();
+  }
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
 }
 
-function selectHuntByCode(huntCode) {
+function selectHuntByCode(huntCode, options = {}) {
   const hunt = huntData.find(h => getHuntCode(h) === huntCode);
   if (!hunt) return;
 
@@ -2744,7 +2890,11 @@ function selectHuntByCode(huntCode) {
   updateCesiumView(hunt);
   updateDwrBoundaryEmbed(hunt);
   refreshLiveBoundaryFilter();
-  zoomToSelectedBoundary();
+  if (options.selectionMode === 'switch') {
+    panToSelectedBoundary();
+  } else {
+    zoomToSelectedBoundary();
+  }
   updateInteractivePanePriority();
   refreshSelectedHuntOfficialInfo(hunt);
 }
@@ -2978,7 +3128,23 @@ document.addEventListener('keydown', e => {
   }
 });
 
+map.on('mousemove', e => {
+  updateBoundaryHoverTooltip(e.latlng);
+});
+
+map.on('mouseout', () => {
+  hideBoundaryHoverTooltip();
+});
+
+map.on('dblclick', evt => {
+  if (!selectedHunt || isLandOverlayPopupOpen()) return;
+  const layer = findBoundaryLayerAtLatLng(evt.latlng);
+  if (!layer?.feature) return;
+  openBoundaryChoicePopup(layer, layer.feature, evt, { centered: true, selectionMode: 'switch' });
+});
+
 map.on('zoomend', () => {
+  hideBoundaryHoverTooltip();
   refreshLiveBoundaryFilter();
   updateContextualLandOverlayVisibility();
   if (selectedBoundaryLayer && typeof selectedBoundaryLayer.setStyle === 'function') {
@@ -3059,6 +3225,7 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
 
 
 
