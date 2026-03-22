@@ -754,15 +754,13 @@
     }
 
     #map-wrap.terrain-boost .leaflet-tile-pane {
-      filter: saturate(1.20) contrast(1.20) brightness(1.0);
+      filter: none;
     }
 
     #map-wrap.terrain-boost::after {
-      opacity: 1;
-      background:
-        linear-gradient(rgba(214, 195, 156, 0.26), rgba(214, 195, 156, 0.26)),
-        linear-gradient(rgba(245, 236, 214, 0.28), rgba(245, 236, 214, 0.28));
-      mix-blend-mode: multiply;
+      opacity: 0;
+      background: none;
+      mix-blend-mode: normal;
     }
 
     .google-shell.terrain-sync .google-frame {
@@ -2287,9 +2285,11 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.8/dist/esri-leaflet.js"></script>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.135/Build/Cesium/Cesium.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlxyY6T31oqQ7sBvGGm-Q23QU5zInRo0I" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBlxyY6T31oqQ7sBvGGm-Q23QU5zInRo0I" defer></script>
   <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@0.13.5/dist/Leaflet.GoogleMutant.js"></script>
 
   <script src="google-maps-test.js"></script>
 </body>
 </html>
+
+

@@ -635,9 +635,6 @@ async function initCesiumViewer() {
   const C = window.Cesium;
 
   try {
-    // Inject your Google API Key here for Google 3D Tiles
-    C.GoogleMaps.defaultApiKey = 'AIzaSyBlxyY6T31oqQ7sBvGGm-Q23QU5zInRo0I.;
-
     cesiumViewer = new C.Viewer('cesiumContainer', {
       animation: false,
       timeline: false,
@@ -650,14 +647,35 @@ async function initCesiumViewer() {
       infoBox: false,
       selectionIndicator: false,
       scene3DOnly: true,
-      globe: false, // Turn off default globe
       baseLayer: false
     });
 
+    cesiumViewer.scene.globe.show = true;
+    cesiumViewer.scene.globe.enableLighting = true;
+
+    cesiumViewer.imageryLayers.addImageryProvider(
+      new C.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri'
+      })
+    );
+
+    cesiumViewer.imageryLayers.addImageryProvider(
+      new C.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places_Alternate/MapServer/tile/{z}/{y}/{x}',
+        credit: 'Esri'
+      })
+    );
+
+    let google3dLoaded = false;
     try {
-      const tileset = await C.createGooglePhotorealistic3DTileset();
-      cesiumViewer.scene.primitives.add(tileset);
-      cesiumTerrainEnabled = true; 
+      if (C.GoogleMaps && typeof C.createGooglePhotorealistic3DTileset === 'function') {
+        C.GoogleMaps.defaultApiKey = 'AIzaSyBlxyY6T31oqQ7sBvGGm-Q23QU5zInRo0I';
+        const tileset = await C.createGooglePhotorealistic3DTileset();
+        cesiumViewer.scene.primitives.add(tileset);
+        cesiumTerrainEnabled = true;
+        google3dLoaded = true;
+      }
     } catch (error) {
       console.warn('Could not load Google 3D Tiles:', error);
     }
@@ -668,7 +686,9 @@ async function initCesiumViewer() {
     });
 
     if (cesiumNotice) {
-      cesiumNotice.textContent = '3D scouting is live with Google Photorealistic 3D Tiles.';
+      cesiumNotice.textContent = google3dLoaded
+        ? '3D scouting is live with Google Photorealistic 3D Tiles.'
+        : '3D scouting is live with fallback imagery. Google 3D tiles are unavailable here, but Cesium is usable.';
     }
 
     updateCesiumControlLabels();
@@ -1648,26 +1668,62 @@ const huntingStyle = [
   { "featureType": "landscape.natural.terrain", "elementType": "geometry", "stylers": [{ "visibility": "on" }] }
 ];
 
+function createGoogleBasemap(type, styles, fallback) {
+  try {
+    if (window.google?.maps && L.gridLayer?.googleMutant) {
+      const styleOptions = USE_GOOGLE_BASELINE || !styles ? { type } : { type, styles };
+      return L.gridLayer.googleMutant(styleOptions);
+    }
+  } catch (error) {
+    console.warn(`Google basemap ${type} failed, using fallback.`, error);
+  }
+  return fallback;
+}
+
 // 2. Create the Google Basemaps inside Leaflet
 const basemaps = {
-  terrain: L.gridLayer.googleMutant({ 
-    type: 'terrain', 
-    styles: huntingStyle 
-  }),
-  hybrid: L.gridLayer.googleMutant({ 
-    type: 'hybrid' 
-  }),
-  satellite: L.gridLayer.googleMutant({ 
-    type: 'satellite' 
-  }),
-  roadmap: L.gridLayer.googleMutant({ 
-    type: 'roadmap',
-    styles: huntingStyle
-  })
+  terrain: createGoogleBasemap(
+    'terrain',
+    huntingStyle,
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    })
+  ),
+  hybrid: createGoogleBasemap(
+    'hybrid',
+    undefined,
+    L.layerGroup([
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      }),
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places_Alternate/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Labels &copy; Esri'
+      })
+    ])
+  ),
+  satellite: createGoogleBasemap(
+    'satellite',
+    undefined,
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    })
+  ),
+  roadmap: createGoogleBasemap(
+    'roadmap',
+    huntingStyle,
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    })
+  )
 };
 
 // 3. Set the default map to Google's HD Terrain
-basemaps.terrain.addTo(map);
+(basemaps.terrain || basemaps.roadmap).addTo(map);
 // -------------------------------------
 
 const unitCenterLayer = L.layerGroup().addTo(map);
@@ -3518,3 +3574,8 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
+
+
+
+
