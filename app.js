@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-54';
+const APP_BUILD = 'build-2026-03-21-57';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -174,6 +174,41 @@ const UNIT_CENTER_LOOKUP = {
   'west-desert-south': [38.78, -113.42]
 };
 
+const OUTFITTER_CITY_LOOKUP = {
+  blanding: [37.624, -109.478],
+  beaver: [38.2769, -112.6411],
+  cedarcity: [37.6775, -113.0619],
+  'cedar city': [37.6775, -113.0619],
+  delta: [39.3527, -112.5772],
+  duchesne: [40.1633, -110.4010],
+  ephraim: [39.3597, -111.5863],
+  escalante: [37.7703, -111.6027],
+  ferron: [39.0930, -111.1299],
+  fillmore: [38.9688, -112.3233],
+  gunnison: [39.1555, -111.8199],
+  heber: [40.5070, -111.4138],
+  'heber city': [40.5070, -111.4138],
+  kanab: [37.0475, -112.5263],
+  kamas: [40.6430, -111.2807],
+  loa: [38.4022, -111.6358],
+  manti: [39.2683, -111.6369],
+  moab: [38.5733, -109.5498],
+  monroe: [38.6291, -112.1202],
+  monticello: [37.8711, -109.3429],
+  'mount pleasant': [39.5461, -111.4552],
+  nephi: [39.7103, -111.8358],
+  panguitch: [37.8228, -112.4358],
+  price: [39.5994, -110.8107],
+  richfield: [38.7725, -112.0849],
+  roosevelt: [40.2994, -109.9888],
+  salina: [38.9583, -111.8597],
+  'spanish fork': [40.1149, -111.6549],
+  springville: [40.1652, -111.6108],
+  'st george': [37.0965, -113.5684],
+  'st. george': [37.0965, -113.5684],
+  vernal: [40.4555, -109.5287]
+};
+
 const HUNT_TYPE_ORDER = [
   'General',
   'Youth',
@@ -314,7 +349,6 @@ const huntResultsEl = document.getElementById('huntResults');
 const huntResultsMobileEl = document.getElementById('huntResultsMobile');
 const resultsEl = document.getElementById('results');
 const resultsMobileEl = document.getElementById('resultsMobile');
-const areaInfoEl = document.getElementById('areaInfo');
 const areaInfoMobileEl = document.getElementById('areaInfoMobile');
 const areaInfoMapEl = document.getElementById('areaInfoMap');
 const huntCountEl = document.getElementById('huntCount');
@@ -376,6 +410,17 @@ function formatPhone(phone) {
   const d = safe(phone).replace(/\D/g, '');
   if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   return safe(phone);
+}
+
+function getOutfitterCityCenter(outfitter) {
+  const rawCity = safe(outfitter?.city).trim().toLowerCase();
+  if (!rawCity) return null;
+  return (
+    OUTFITTER_CITY_LOOKUP[rawCity] ||
+    OUTFITTER_CITY_LOOKUP[rawCity.replace(/\./g, '')] ||
+    OUTFITTER_CITY_LOOKUP[rawCity.replace(/\s+/g, '')] ||
+    null
+  );
 }
 
 function setSelectedDisplay(title, meta, reference = '') {
@@ -2492,37 +2537,26 @@ function renderHuntResults() {
 }
 
 function renderAreaInfo(remoteInfo = null) {
-  if (!areaInfoEl && !areaInfoMobileEl && !areaInfoMapEl) return;
+  if (!areaInfoMapEl && !areaInfoMobileEl) return;
 
   if (!selectedHunt) {
-    setHtml([areaInfoEl, areaInfoMobileEl, areaInfoMapEl], 'Click a hunt unit or select one from the filter.');
+    setHtml([areaInfoMapEl, areaInfoMobileEl], 'Click a hunt unit or select one from the filter.');
     return;
   }
 
-  const boundaryCenter = getSelectedBoundaryCenter(selectedHunt);
   const officialNote = getProvisionalNote(selectedHunt);
   const seasonText = getEffectiveSeasonText(selectedHunt, remoteInfo);
-  const boundaryName = (remoteInfo?.boundaryNames || []).join(' | ') || getUnitName(selectedHunt) || getUnitValue(selectedHunt) || 'N/A';
   const huntCode = escapeHtml(getHuntCode(selectedHunt) || '');
-  const title = escapeHtml(getHuntTitle(selectedHunt) || getHuntCode(selectedHunt));
-  const unit = escapeHtml(getUnitName(selectedHunt) || getUnitValue(selectedHunt) || 'N/A');
   const species = escapeHtml(getSpeciesDisplay(selectedHunt) || 'N/A');
   const sex = escapeHtml(getNormalizedSex(selectedHunt) || 'N/A');
   const weapon = escapeHtml(getWeapon(selectedHunt) || 'N/A');
   const huntType = escapeHtml(getHuntTypeLabel(getHuntType(selectedHunt)) || 'N/A');
-  const centerText = boundaryCenter ? `${escapeHtml(boundaryCenter.lat.toFixed(4))}, ${escapeHtml(boundaryCenter.lng.toFixed(4))}` : 'Mapped to selected unit';
   const seasonEscaped = escapeHtml(seasonText || 'N/A');
-  const boundaryEscaped = escapeHtml(boundaryName);
 
-  setHtml([areaInfoEl, areaInfoMobileEl, areaInfoMapEl], `
+  setHtml([areaInfoMapEl, areaInfoMobileEl], `
     <div class="hunt-official-card">
-      <div class="hunt-official-kicker">Selected Hunt Unit</div>
       <div class="hunt-official-shell">
         <div class="hunt-official-main">
-          <div class="hunt-official-titlebar">
-            <h4>${title}</h4>
-          </div>
-          <div class="hunt-official-subtitle">${unit}</div>
           <div class="hunt-official-grid">
             <div><strong>Hunt Number:</strong><br>${huntCode || 'N/A'}</div>
             <div><strong>Species:</strong><br>${species}</div>
@@ -2562,8 +2596,20 @@ function renderOutfitters() {
   const centerLng = isLikelyUtahCoordinate(baseLat, baseLng) ? baseLng : trustedCenter?.[1];
   if (!Number.isFinite(centerLat) || !Number.isFinite(centerLng)) return;
 
+  const cityOffsets = new Map();
+
   matches.forEach((o, i) => {
-    const marker = L.marker([centerLat + i * 0.03, centerLng + i * 0.03]).addTo(outfitterLayer);
+    const cityCenter = getOutfitterCityCenter(o);
+    const cityKey = safe(o.city).trim().toLowerCase() || `fallback-${i}`;
+    const cityIndex = cityOffsets.get(cityKey) || 0;
+    cityOffsets.set(cityKey, cityIndex + 1);
+
+    const useLat = cityCenter?.[0] ?? centerLat;
+    const useLng = cityCenter?.[1] ?? centerLng;
+    const markerLat = useLat + cityIndex * 0.012;
+    const markerLng = useLng + cityIndex * 0.012;
+
+    const marker = L.marker([markerLat, markerLng]).addTo(outfitterLayer);
     marker.bindPopup(`
       <b>${escapeHtml(o.listingName)}</b><br>
       ${escapeHtml(o.certLevel)} | ${escapeHtml(o.verificationStatus)}<br>
@@ -2969,7 +3015,7 @@ map.on('zoomend', () => {
 
     setHtml([huntResultsEl, huntResultsMobileEl], `<div class="empty">Failed to load hunt data: ${escapeHtml(err.message || String(err))}</div>`);
     setHtml([resultsEl, resultsMobileEl], `<div class="empty">Initialization error: ${escapeHtml(err.message || String(err))}</div>`);
-    setHtml([areaInfoEl, areaInfoMobileEl], 'App failed to initialize. Open browser console for details.');
+    setHtml([areaInfoMapEl, areaInfoMobileEl], 'App failed to initialize. Open browser console for details.');
     setBuildMarker();
     window.setTimeout(() => map.invalidateSize(), 0);
   }
@@ -2985,6 +3031,9 @@ map.on('zoomend', () => {
     setTimeout(forcePageTop, 150);
   });
 })();
+
+
+
 
 
 
