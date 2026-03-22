@@ -7,7 +7,7 @@ let selectedHunt = null;
 let selectedUnit = null;
 const APP_BUILD = 'build-2026-03-22-118';
 const FEDERAL_BADGE_MIN_ZOOM = 8;
-const CESIUM_ION_TOKEN = '';
+const CESIUM_ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxMjBiODg4NS1mMDNkLTRjNTYtOGQxZi1jMmY4ZjdhMTIxMGIiLCJpZCI6NDA3MDE1LCJpYXQiOjE3NzQwODk2NzF9.2nojSCO46EKYlLpsj3YQ5fGDj_z92PjmL-w1mdhfHfI';
 
 let outfitters = [
   {
