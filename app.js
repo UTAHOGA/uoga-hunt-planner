@@ -5,7 +5,7 @@
 let huntData = [];
 let selectedHunt = null;
 let selectedUnit = null;
-const APP_BUILD = 'build-2026-03-21-70';
+const APP_BUILD = 'build-2026-03-21-73';
 const CESIUM_ION_TOKEN = '';
 
 let outfitters = [
@@ -405,6 +405,33 @@ function listify(value) {
     .filter(Boolean);
 }
 
+function splitEmailList(value) {
+  if (Array.isArray(value)) return value.map(v => safe(v).trim()).filter(Boolean);
+  return safe(value)
+    .split(/[\s,;|]+/)
+    .map(v => safe(v).trim())
+    .filter(v => v && v.includes('@'));
+}
+
+function splitOwnerList(value) {
+  if (Array.isArray(value)) return value.map(v => safe(v).trim()).filter(Boolean);
+  return safe(value)
+    .split(/[;|]/)
+    .map(v => safe(v).trim())
+    .filter(Boolean);
+}
+
+function splitPhoneList(value) {
+  if (Array.isArray(value)) return value.map(v => safe(v).trim()).filter(Boolean);
+  const raw = safe(value).trim();
+  if (!raw) return [];
+  const matches = raw.match(/(?:\+?1[\s.-]*)?(?:\(?\d{3}\)?[\s.-]*)\d{3}[\s.-]*\d{4}/g);
+  if (matches && matches.length) {
+    return matches.map(v => safe(v).trim()).filter(Boolean);
+  }
+  return [raw];
+}
+
 function slugList(value) {
   return listify(value).map(slugify).filter(Boolean);
 }
@@ -413,6 +440,10 @@ function formatPhone(phone) {
   const d = safe(phone).replace(/\D/g, '');
   if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   return safe(phone);
+}
+
+function formatPhoneList(phone) {
+  return splitPhoneList(phone).map(formatPhone).filter(Boolean).join(', ');
 }
 
 function getOutfitterCityCenter(outfitter) {
@@ -1375,7 +1406,7 @@ function getHuntBoundaryStyle() {
 
 function updateMapAppearance() {
   if (!mapWrapEl || !basemapSelect) return;
-  const isTerrainLike = ['usgs', 'outdoor', 'topo'].includes(basemapSelect.value);
+  const isTerrainLike = ['usgs', 'outdoor', 'topo', 'fs'].includes(basemapSelect.value);
   mapWrapEl.classList.toggle('terrain-boost', isTerrainLike);
   if (dwrShell) dwrShell.classList.remove('terrain-sync');
   if (cesiumShell) cesiumShell.classList.toggle('terrain-sync', isTerrainLike);
@@ -1421,6 +1452,15 @@ const basemaps = {
     'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
     { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
   ),
+  fs: (window.L && window.L.esri && typeof window.L.esri.dynamicMapLayer === 'function')
+    ? L.esri.dynamicMapLayer({
+        url: 'https://apps.fs.usda.gov/fsgisx05/rest/services/wo_nfs_gtac/EGIS_RecreationBasemap_01/MapServer',
+        opacity: 1
+      })
+    : L.tileLayer(
+        'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 16, attribution: 'Tiles &copy; USGS' }
+      ),
   positron: L.layerGroup([
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
@@ -1574,10 +1614,12 @@ async function loadOutfittersData() {
         certLevel: safe(o.certLevel).trim(),
         verificationStatus: safe(o.verificationStatus || 'Vetted').trim(),
         website: safe(o.website).trim(),
-        phone: safe(o.phone).trim(),
-        email: safe(o.email).trim(),
+        logoUrl: normalizeUrl(o.logoUrl || o.logo || o.imageUrl),
+        phone: splitPhoneList(o.phone),
+        email: splitEmailList(o.email),
         region: safe(o.region).trim(),
         city: safe(o.city).trim(),
+        ownerName: splitOwnerList(o.ownerName),
         speciesServed: Array.isArray(o.speciesServed) ? o.speciesServed.join(', ') : safe(o.speciesServed || o.species).trim(),
         unitsServed: Array.isArray(o.unitsServed) ? o.unitsServed.join(', ') : safe(o.unitsServed).trim(),
         blmDistricts: Array.isArray(o.blmDistricts) ? o.blmDistricts.join(', ') : safe(o.blmDistricts).trim(),
@@ -2347,8 +2389,7 @@ function applyLiveBoundaryWhere(whereClause) {
 
 function shouldShowContextualLandOverlay() {
   if (!map) return false;
-  const zoom = typeof map.getZoom === 'function' ? map.getZoom() : 0;
-  return !!selectedHunt && zoom >= 8;
+  return !!selectedHunt;
 }
 
 function canOpenLandOverlayPopup() {
@@ -2911,7 +2952,7 @@ function renderOutfitterResults() {
       <div class="meta">
         <div><strong>City:</strong> ${escapeHtml(o.city)}</div>
         <div><strong>Species:</strong> ${escapeHtml(o.speciesServed || o.species || 'N/A')}</div>
-        <div><strong>Phone:</strong> ${escapeHtml(formatPhone(o.phone))}</div>
+        <div><strong>Phone:</strong> ${escapeHtml(formatPhoneList(o.phone) || 'N/A')}</div>
         <div><strong>Hunt Units:</strong> ${escapeHtml(listify(o.unitsServed).join(', ') || 'N/A')}</div>
         <div><strong>BLM Districts:</strong> ${escapeHtml(listify(o.blmDistricts).join(', ') || 'N/A')}</div>
         <div><strong>USFS Forests:</strong> ${escapeHtml(listify(o.usfsForests || o.forestDistricts).join(', ') || 'N/A')}</div>
